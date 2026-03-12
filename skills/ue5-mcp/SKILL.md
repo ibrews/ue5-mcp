@@ -97,18 +97,25 @@ Always set lights to **Movable** mobility when using Lumen. Lumen requires movab
 Level-placed instances can retain stale editor overrides even after the parent Blueprint is modified. Always check the level instance after changing the parent. You may need to revert overridden properties on the instance to pick up the new defaults.
 
 ### Never Delete/Modify Referenced Meshes
-Deleting or transforming mesh assets while actors reference them causes a `RegisteredElementType` assertion crash (`UTypedElementRegistry::GetElementImpl → USelection::GetObjectForElementHandle`). This also happens when selecting broken Niagara actors.
+Deleting or transforming mesh assets while actors reference them causes a `RegisteredElementType` assertion crash (`UTypedElementRegistry::GetElementImpl → USelection::GetObjectForElementHandle`). This crash also triggers from rapid actor spawn/delete/focus cycles (see "Rapid Actor Operations Crash" below).
 
 **Safe pattern:** Always create NEW mesh assets, verify they work, then swap references on actors. Never force-delete assets that are in use.
 
-If you hit this crash, just restart the editor — no data is lost.
+If you hit this crash, just restart the editor — no data is lost, but unsaved changes are gone.
 
 ### Editor Sprites vs Actual Particles
-Static screenshots from `take_gameplay_screenshot` show editor selection sprites (component icons) that look like particles but are NOT real particles. Always verify particle effects by:
-1. Spawning the Niagara effect as an actor in the level and visually confirming via pixel streaming
-2. Running PIE and checking there too
+Static screenshots from `take_gameplay_screenshot` show editor selection sprites (component icons) that look like particles but are NOT real particles. Editor viewport screenshots also frequently fail to capture live particle effects even when they're working. Always verify particle effects by:
+1. Spawning the Niagara effect as an actor in the level
+2. Checking `is_active: true` via `get_actor_properties`
+3. Running PIE and taking a screenshot during gameplay — PIE screenshots are more reliable for capturing particles
+4. Using pixel streaming for real-time visual confirmation
 
-Never assume a particle effect works just because it compiles. Drop it in the scene and look at it.
+Never assume a particle effect works just because it compiles or because `get_niagara_emitters` looks correct. The system can report correct modules while producing zero particles (see Niagara section).
+
+### Rapid Actor Operations Crash
+Spawning, deleting, and focusing viewport on Niagara actors in quick succession can trigger a `RegisteredElementType` assertion crash (`UTypedElementRegistry::GetElementImpl → USelection::GetObjectForElementHandle`). This is not specific to Niagara editing — it happens when the editor's selection system references an actor that was just destroyed.
+
+**Prevention:** Add brief pauses between spawn/delete/focus operations. Don't delete an actor immediately after focusing the viewport on it. Save frequently so crashes don't lose work.
 
 ### Save Frequently
 Editor crashes (Niagara assertion, MetaSound crash) revert unsaved changes. Context window compactions lose track of what was already done. Save after every few meaningful changes. Verify with `find_blueprint_nodes` or `blueprint_to_lisp` that your nodes actually exist before moving on.
@@ -119,30 +126,37 @@ Editor crashes (Niagara assertion, MetaSound crash) revert unsaved changes. Cont
 
 Niagara is the area where MCP has the most limitations. Knowing exactly what works saves hours.
 
-### Creating Niagara Systems (MCP)
+### CRITICAL: `create_niagara_system` Creates Broken Systems
 
-**What works:**
-- `create_niagara_system` — creates an empty system
-- `add_niagara_emitter` with template names (e.g., Fountain) — adds a working emitter with proper module wiring
-- `set_niagara_curve` — WORKS reliably for ScaleColor (color curves) and FloatFromCurve (size/float curves)
-- `set_niagara_material` — WORKS for assigning materials to sprite renderers
+**`create_niagara_system` + `add_niagara_emitter` produces systems that NEVER emit particles.** The system compiles without errors, modules are listed correctly, and `get_niagara_emitters` reports everything looks normal — but the emitter component stays `is_active: false` when spawned, and no particles ever render. Even forcing activation via Python (`component.activate(True)`) sets `is_active` to `True` but still produces zero particles. The system is internally broken in a way MCP cannot fix.
 
-**What's broken or unreliable:**
+This was confirmed across multiple templates (Fountain, sprite) and multiple creation attempts. It is not an intermittent issue — it is 100% reproducible.
+
+### Working Pattern: `duplicate_asset` Instead of Creating From Scratch
+
+The reliable workaround is to **duplicate an existing, known-working Niagara system** using `duplicate_asset`, then modify it:
+
+1. **Prerequisite:** Have at least one working Niagara system in your project. If the project doesn't have one, the user must create one manually in the Niagara editor (e.g., a simple Fountain from Epic's template). This only needs to happen once.
+2. `duplicate_asset` on the working system → new asset path
+3. `set_niagara_material` — WORKS on duplicated systems
+4. `set_niagara_curve` — WORKS reliably for ScaleColor (color curves) and FloatFromCurve (size/float curves) on duplicated systems
+5. `spawn_niagara_effect` to place it in the level
+6. **Verify `is_active: true`** via `get_actor_properties` on the spawned actor — if it's `false`, the system is broken
+7. **Visually verify particles render** — editor screenshots often don't capture live particles. Use PIE screenshots or pixel streaming.
+
+**What works on duplicated systems:**
+- `set_niagara_curve` — reliable for ScaleColor and FloatFromCurve
+- `set_niagara_material` — works for assigning materials to renderers
+
+**What's broken everywhere (duplicated or created):**
 - `set_niagara_module_input` — most inputs return "Input not found" (SpawnRate, Loop Duration, Gravity, sprite size). Enum-type inputs like Loop Behavior sometimes work.
 - `set_niagara_dynamic_input` — BROKEN. "Failed to load random range script" for all attempts.
 
-**Working pattern for creating a Niagara effect:**
-1. `create_niagara_system` with sprite template
-2. `add_niagara_emitter` from a template (Fountain works)
-3. Create a translucent material with a ParticleColor node → BaseColor (RGB) and Opacity (A)
-4. `set_niagara_material` to assign it
-5. `set_niagara_curve` for color and size over lifetime
-6. Accept default spawn rate and velocity (you can't change them via MCP)
-7. **Drop the effect in the scene and visually verify it produces particles**
+**Diagnostic pattern:** After spawning a Niagara actor, check `is_active` in the actor properties. If it's `false`, the system won't produce particles regardless of what you do to it. This is the fastest way to distinguish a working system from a broken one.
 
 ### Niagara Components in Blueprints
 
-This is a major gap. You cannot add a NiagaraComponent to a Blueprint via MCP or Python:
+You cannot add a NiagaraComponent to a Blueprint via MCP or Python:
 
 - `add_blueprint_component` returns "Unknown component type" for all variants ("Niagara", "NiagaraComponent", "NiagaraParticleSystem")
 - `add_niagara_component` only adds to level actor INSTANCES, not the Blueprint definition
@@ -150,12 +164,16 @@ This is a major gap. You cannot add a NiagaraComponent to a Blueprint via MCP or
 
 **Workaround:** Use the `SpawnSystemAtLocation` Blueprint function node (from NiagaraFunctionLibrary):
 - Add via `add_blueprint_function_node` with `function_name: "SpawnSystemAtLocation"`, `target_class: "NiagaraFunctionLibrary"`
-- Set `SystemTemplate` pin to the Niagara system asset path
+- Set `SystemTemplate` pin to the Niagara system asset path (format: `/Game/Path/AssetName.AssetName`)
 - Set `bAutoDestroy=true`, `bAutoActivate=true`
 - Wire `GetActorLocation` to the `Location` pin
 - Insert into the exec chain at the appropriate gameplay moment
 
 This spawns the effect at runtime and auto-cleans up when done.
+
+### Particle Appearance Limitations
+
+Even with a working duplicated system, you inherit the source system's behavior (velocity direction, spawn rate, forces) because `set_niagara_module_input` can't change most parameters. If you need exhaust smoke but your source is a Fountain (upward velocity + gravity), the particles will shoot up and fall — not trail behind a rocket. Plan your source system accordingly.
 
 ---
 

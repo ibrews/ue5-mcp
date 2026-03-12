@@ -10,7 +10,7 @@ This plugin gives your AI that knowledge upfront so it doesn't have to rediscove
 
 - **Tool strategy** — when to use MCP tools vs pixel streaming vs Python editor scripting, and the tradeoffs of each
 - **Python ↔ MCP data channel** — a workaround for reading Python script output back into MCP using Actor Tags (because there's no stdout pipe)
-- **Niagara particles** — which MCP calls actually work, which silently fail, and the step-by-step pattern that produces visible particles (hint: most module inputs can't be set through the API)
+- **Niagara particles** — `create_niagara_system` produces systems that compile clean but never emit particles. The working pattern uses `duplicate_asset` on an existing system instead. Most module inputs can't be set through the API.
 - **MetaSound audio** — crash-causing patterns to avoid (connecting a Multiply node to an Audio output will crash your editor at runtime with zero warning at edit time)
 - **Blueprint wiring** — patterns for AudioComponent setup, inserting nodes into existing exec chains, batch editing, and pin value formats that the API actually accepts
 - **Core UE5 gotchas** — Lumen lighting requirements, instance override staleness, referenced mesh deletion crashes, editor sprite false positives
