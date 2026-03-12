@@ -17,21 +17,22 @@ This skill gives your AI that knowledge upfront so it doesn't have to rediscover
 
 ## Installation
 
-### As a personal skill (all projects)
+### Cowork (Claude desktop app)
+
+1. [Download this repo as a ZIP](https://github.com/ibrews/ue5-mcp/archive/refs/heads/main.zip)
+2. In Claude desktop: **Customize > Skills > "+" > Upload a skill** → select the zip
+
+### Claude Code (personal skill, all projects)
 
 ```bash
 git clone https://github.com/ibrews/ue5-mcp.git ~/.claude/skills/ue5-mcp
 ```
 
-### As a project skill (single project)
+### Claude Code (project skill, single project)
 
 ```bash
 git clone https://github.com/ibrews/ue5-mcp.git .claude/skills/ue5-mcp
 ```
-
-### Via Cowork UI
-
-In the Claude desktop app: **Customize > Skills > "+" > Upload a skill** — zip this repo and upload it.
 
 ### Other AI agents (OpenClaw, etc.)
 
