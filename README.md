@@ -1,6 +1,6 @@
 # ue5-mcp
 
-A [Cowork](https://claude.ai) / [Claude Code](https://docs.claude.com/en/docs/claude-code) skill for developing in Unreal Engine 5 via AI.
+A knowledge base for AI-assisted Unreal Engine 5 development via the [ECABridge MCP plugin](https://www.unrealengine.com/marketplace/en-US/product/ecabridge). Built for [Claude](https://claude.ai) (Cowork / Claude Code), but the knowledge is useful for any AI agent that connects to UE5 through MCP.
 
 ## What this is
 
@@ -20,7 +20,7 @@ This skill gives Claude that knowledge upfront so it doesn't have to rediscover 
 ## Requirements
 
 - Unreal Engine 5.x with the [ECABridge MCP plugin](https://www.unrealengine.com/marketplace/en-US/product/ecabridge) installed and connected
-- [Claude Code](https://docs.claude.com/en/docs/claude-code) or [Cowork](https://claude.ai) (Claude desktop app)
+- An AI agent that can call MCP tools (Claude, OpenClaw, or any MCP-compatible agent)
 - Optional: Pixel Streaming plugin enabled (for visual verification and game input)
 - Optional: Python Editor Script Plugin enabled (for advanced scripting)
 
@@ -43,6 +43,14 @@ Clone into your project or global skills directory:
 ```bash
 git clone git@github.com:ibrews/ue5-mcp.git .claude/skills/ue5-mcp
 ```
+
+### OpenClaw and other AI agents
+
+The `SKILL.md` file uses Claude's skill format (YAML frontmatter + markdown), but the actual content — tool strategies, crash patterns, broken APIs, working workarounds — is universal to anyone using UE5's ECABridge MCP tools regardless of which AI is driving them.
+
+To use with a non-Claude agent, feed the content of `SKILL.md` into your agent's system prompt or knowledge base. The file is plain markdown beneath the YAML header. Strip the frontmatter if your agent doesn't understand it — the knowledge sections stand on their own.
+
+If your agent framework has its own skill/plugin format, adapt the markdown content into that format. The information doesn't change; only the packaging does.
 
 ## Updating
 
