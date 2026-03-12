@@ -2,9 +2,9 @@
 
 A knowledge base for AI-assisted Unreal Engine 5 development via MCP.
 
-When an AI agent connects to Unreal Engine through the [ECABridge MCP plugin](https://www.unrealengine.com/marketplace/en-US/product/ecabridge), it gains access to 200+ tools for manipulating Blueprints, materials, Niagara particles, MetaSound audio, meshes, widgets, and more. The tools are powerful but full of undocumented quirks — APIs that silently fail, crash patterns that only surface at runtime, and workarounds that take hours to discover through trial and error.
+When an AI agent connects to Unreal Engine through [ECABridge](https://github.com/EpicGames/UnrealEngine/tree/ue5-main/Engine/Plugins/Experimental/ECABridge), it gains access to 200+ tools for manipulating Blueprints, materials, Niagara particles, MetaSound audio, meshes, widgets, and more. The tools are powerful but full of undocumented quirks — APIs that silently fail, crash patterns that only surface at runtime, and workarounds that take hours to discover through trial and error.
 
-This skill gives your AI that knowledge upfront so it doesn't have to rediscover it every session.
+This plugin gives your AI that knowledge upfront so it doesn't have to rediscover it every session.
 
 ## What's inside
 
@@ -15,23 +15,34 @@ This skill gives your AI that knowledge upfront so it doesn't have to rediscover
 - **Blueprint wiring** — patterns for AudioComponent setup, inserting nodes into existing exec chains, batch editing, and pin value formats that the API actually accepts
 - **Core UE5 gotchas** — Lumen lighting requirements, instance override staleness, referenced mesh deletion crashes, editor sprite false positives
 
+## ECABridge
+
+[ECABridge](https://github.com/EpicGames/UnrealEngine/tree/ue5-main/Engine/Plugins/Experimental/ECABridge) is Epic's experimental MCP plugin for Unreal Engine. It ships with UE 5.8, but compiled builds are available for UE 5.7 on Mac and Windows. See the [livestream intro](https://youtube.com/live/HLVxmSw1jNg) for setup and a walkthrough.
+
+Note: The ECABridge source link requires a GitHub account linked to your Epic Games account to access.
+
 ## Installation
 
-### Cowork (Claude desktop app)
+### As a plugin (recommended — auto-updates from GitHub)
+
+Add the marketplace and install:
+
+```
+/plugin marketplace add ibrews/ue5-mcp
+/plugin install ue5-mcp@ibrews-ue5-mcp
+```
+
+Works in both Claude Code and Cowork. Updates automatically when you push changes to the repo.
+
+### Cowork (manual upload)
 
 1. [Download this repo as a ZIP](https://github.com/ibrews/ue5-mcp/archive/refs/heads/main.zip)
 2. In Claude desktop: **Customize > Skills > "+" > Upload a skill** → select the zip
 
-### Claude Code (personal skill, all projects)
+### Claude Code (as a standalone skill)
 
 ```bash
 git clone https://github.com/ibrews/ue5-mcp.git ~/.claude/skills/ue5-mcp
-```
-
-### Claude Code (project skill, single project)
-
-```bash
-git clone https://github.com/ibrews/ue5-mcp.git .claude/skills/ue5-mcp
 ```
 
 ### Other AI agents (OpenClaw, etc.)
@@ -45,7 +56,7 @@ The skill auto-triggers when Unreal Engine MCP tools are detected in a session. 
 ## Requirements
 
 - Unreal Engine 5.x
-- [ECABridge MCP plugin](https://www.unrealengine.com/marketplace/en-US/product/ecabridge) installed and connected
+- [ECABridge](https://github.com/EpicGames/UnrealEngine/tree/ue5-main/Engine/Plugins/Experimental/ECABridge) MCP plugin installed and connected
 - An AI agent that can call MCP tools (Claude, OpenClaw, or any MCP-compatible agent)
 - Optional: Pixel Streaming plugin (for visual verification and game input)
 - Optional: Python Editor Script Plugin (for advanced scripting)
