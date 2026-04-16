@@ -61,6 +61,14 @@ The skill auto-triggers when Unreal Engine MCP tools are detected in a session. 
 - Optional: Pixel Streaming plugin (for visual verification and game input)
 - Optional: Python Editor Script Plugin (for advanced scripting)
 
+## Things to Try
+
+1. **Install the skill and ask your agent to create a new Blueprint Actor** — with ECABridge connected, the Blueprint appears in the Content Browser within seconds; no manual editor clicking required.
+2. **Ask the agent to create a Niagara particle system** — the skill guides it to use `duplicate_asset` on an existing system instead of `create_niagara_system` (which compiles clean but never emits); you should see particles in the viewport.
+3. **Ask the agent to wire an AudioComponent to a MetaSound asset** — the skill warns against the crash pattern (Multiply node → Audio output) and provides the safe wiring sequence; the editor should not crash.
+4. **Ask the agent to run `dump_blueprint_graph` on any Blueprint in your project** — you get a complete JSON dump of all graphs, nodes, pins, and connections that the LLM can reason about directly.
+5. **Ask the agent to batch-rename all assets in a folder using the Python Editor Script Plugin** — the skill describes the Python ↔ MCP data channel workaround (Actor Tags as a stdout pipe) so results flow back to the agent correctly.
+
 ## How it works
 
 The skill is a single `SKILL.md` file. When loaded, it gives your AI agent context about:
