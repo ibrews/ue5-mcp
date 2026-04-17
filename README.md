@@ -2,9 +2,11 @@
 
 A knowledge base for AI-assisted Unreal Engine 5 development via MCP.
 
-When an AI agent connects to Unreal Engine through [ECABridge](https://github.com/EpicGames/UnrealEngine/tree/ue5-main/Engine/Plugins/Experimental/ECABridge), it gains access to 200+ tools for manipulating Blueprints, materials, Niagara particles, MetaSound audio, meshes, widgets, and more. The tools are powerful but full of undocumented quirks — APIs that silently fail, crash patterns that only surface at runtime, and workarounds that take hours to discover through trial and error.
+When an AI agent connects to Unreal Engine through [ECABridge](https://github.com/ibrews/ECABridge), it gains access to 390+ tools for manipulating Blueprints, materials, Niagara particles, MetaSound audio, meshes, widgets, and more. The tools are powerful but full of undocumented quirks — APIs that silently fail, crash patterns that only surface at runtime, and workarounds that take hours to discover through trial and error.
 
-This plugin gives your AI that knowledge upfront so it doesn't have to rediscover it every session.
+This skill gives your AI that knowledge upfront so it doesn't have to rediscover it every session.
+
+> **You need both repos.** **[ECABridge](https://github.com/ibrews/ECABridge)** is the UE5 plugin itself — the C++ source, the compiled binaries, and the full catalog of 390+ MCP tools (Rosetta Stone dumps, MetaHuman pipeline, refactoring commands, etc.). **ue5-mcp** (this repo) is the AI-agent skill that teaches your agent how to use those tools without crashing the editor. Install the plugin from ECABridge; install the skill from here.
 
 ## What's inside
 
@@ -17,9 +19,9 @@ This plugin gives your AI that knowledge upfront so it doesn't have to rediscove
 
 ## ECABridge
 
-[ECABridge](https://github.com/EpicGames/UnrealEngine/tree/ue5-main/Engine/Plugins/Experimental/ECABridge) is Epic's experimental MCP plugin for Unreal Engine. It ships with UE 5.8, but compiled builds are available for UE 5.7 on Mac and Windows. See the [livestream intro](https://youtube.com/live/HLVxmSw1jNg) for setup and a walkthrough.
+[ECABridge](https://github.com/ibrews/ECABridge) is the MCP plugin for Unreal Engine that this skill is built around. Grab the plugin source and compiled binaries there — that README has the full tool catalog and install steps for UE 5.7. See the [livestream intro](https://youtube.com/live/HLVxmSw1jNg) for setup and a walkthrough.
 
-Note: The ECABridge source link requires a GitHub account linked to your Epic Games account to access.
+Epic's upstream version ships with UE 5.8 at [EpicGames/UnrealEngine](https://github.com/EpicGames/UnrealEngine/tree/ue5-main/Engine/Plugins/Experimental/ECABridge) (requires a GitHub account linked to Epic to access).
 
 ## Installation
 
