@@ -399,9 +399,29 @@ Default draw mode is Screen Space; for world-space billboard, set `Space` to `"W
 
 ### Bind Widget Events to Blueprint Functions
 
+The function must already exist on the Widget Blueprint (use `add_blueprint_event_node` or the editor to create it first):
+
 ```
-bind_widget_event(widget_path="...", widget_name="StartButton", event_name="OnClicked",
-                  blueprint_path="/Game/Blueprints/BP_HUD", function_name="HandleStart")
+bind_widget_event(widget_path="/Game/UI/WBP_HUD",
+                  widget_name="StartButton",
+                  event_name="OnClicked",
+                  function_name="HandleStartClicked")
+compile_blueprint(blueprint_path="/Game/UI/WBP_HUD")
+```
+
+`event_name` accepts both the bare event name (`OnClicked`, `OnHovered`) and the underlying delegate property (`OnClickedEvent`) — the resolver tries the literal first, then with an `Event` suffix. Without `function_name`, the widget is just marked as a variable (legacy behavior).
+
+If you don't know the function name, list candidates:
+
+```
+dump_blueprint_graph(blueprint_path="/Game/UI/WBP_HUD")  # functions[] in result
+```
+
+To discover what widget element types you can pass to `add_widget_element`:
+
+```
+list_widget_classes(name_filter="Box")  # → CheckBox, ComboBox, HorizontalBox, VerticalBox, ScrollBox, ...
+list_widget_classes()  # all UWidget subclasses, with is_panel flag for parent eligibility
 ```
 
 ---
