@@ -25,11 +25,11 @@ Battle-tested patterns for working with Unreal Engine 5 through ECABridge MCP to
 Run these steps at the start of every UE5 MCP session before doing any work.
 
 1. **Understand the project state first.** Run `dump_level()` to see all actors currently in the scene. Run `find_assets(path_filter="/Game/")` to see what assets exist. Never assume — read first, then act.
-2. **Check for existing Niagara systems** — `find_assets(class_filter="NiagaraSystem", path_filter="/Game/")`. If any exist, plan to `duplicate_asset` one instead of calling `create_niagara_system` (which is broken — see Niagara section).
-3. **Before editing any Blueprint**, call `dump_blueprint_graph(blueprint_path="...")` to get the complete graph. Never guess the existing node structure.
-4. **Before editing any material**, call `dump_material_graph(material_path="...")` to read the current node graph.
+2. **Before editing any Blueprint**, call `dump_blueprint_graph(blueprint_path="...")` to get the complete graph. Never guess the existing node structure. After edits, call `compile_blueprint` to surface errors and warnings.
+3. **Before editing any material**, call `dump_material_graph(material_path="...")` to read the current node graph.
+4. **Before setting Niagara module inputs**, call `list_module_inputs(...)` for the module — the function-call pin names from `get_niagara_modules` are NOT the same as the user-facing input names.
 5. **Verify pixel streaming if needed** — `tabs_context_mcp` to get the current tab ID. Activate before starting, not mid-task.
-6. **Save after every meaningful change.** `save_level()` for level + dirty assets, or `run_console_command("SaveAll")` for a full editor save.
+6. **Save after every meaningful change.** `save_asset(asset_path)` for one asset, `save_dirty_assets()` for everything dirty in memory, `save_level()` for the current level, or `run_console_command("SaveAll")` for a full editor save.
 
 ---
 
@@ -42,15 +42,18 @@ ECABridge includes deep introspection commands that serialize any UE5 asset into
 | `dump_blueprint_graph(blueprint_path)` | Complete graph — all nodes, pins, connections, variables, components |
 | `dump_material_graph(material_path)` | All expression nodes, connections, material properties, compilation errors |
 | `dump_niagara_system(system_path)` | Emitter stacks, renderers, module inputs, parameter bindings |
+| `list_module_inputs(system_path, emitter_name, module_name, script_usage)` | User-facing module inputs (the ones the Niagara stack panel shows) — required reading before set_niagara_module_input |
 | `dump_widget_tree(widget_path)` | Full widget hierarchy — parent-child structure, slot properties, visibility |
 | `dump_level(max_actors=100)` | All actors with transforms, components, tags (lightweight or deep mode) |
 | `dump_asset(asset_path)` | Full JSON of any asset — all UPROPERTYs, sub-objects, references, metadata |
+| `get_component_property(blueprint_path, component_name, property_name)` | Read complement to set_component_property — verify a property landed |
 | `find_assets(class_filter, path_filter)` | Search asset registry by class, path, or name wildcard |
 | `get_asset_references(asset_path, direction)` | Dependency graph — what references what (use before deleting anything) |
 | `dump_metasound_graph(metasound_path)` | All MetaSound nodes, pins, connections, source inputs/outputs |
 | `dump_animation_blueprint(abp_path)` | State machines, transitions, AnimGraph nodes |
 | `dump_level_sequence(sequence_path)` | All bindings, tracks, sections, keyframe channel data |
 | `dump_datatable(datatable_path)` | Schema with types + all row data |
+| `compile_blueprint(blueprint_path)` | Compile + return errors[], warnings[], status enum (UpToDate, UpToDateWithWarnings, Error, Dirty) |
 
 **Pattern:** read → plan → edit → verify. Never skip the read step.
 
@@ -84,9 +87,9 @@ find_assets(class_filter="NiagaraSystem", path_filter="/Game/")
 | Keyboard/mouse input during PIE | Pixel streaming |
 | Click editor UI elements (menus, dialogs, dropdowns) | Pixel streaming |
 | Visual verification of live gameplay/particles | Pixel streaming |
-| Niagara parameter manipulation (SpawnRate, velocity) | Python |
-| Setting object reference properties MCP can't handle | Python |
-| Bulk asset operations, Sequencer control | Python |
+| Niagara module inputs (SpawnRate, velocity, etc.) | MCP — `list_module_inputs` then `set_niagara_module_input` |
+| Object reference properties on components | MCP — `set_component_property` (handles object/soft-object/class/soft-class refs) |
+| Bulk asset operations, Sequencer control | Python (still — no bulk MCP equivalent yet) |
 | Reading Python output back into MCP | Actor Tags data channel |
 
 ### ECABridge MCP Tools (Primary)
@@ -107,12 +110,16 @@ Well-supported operations:
 
 - Cannot send keyboard/mouse input during PIE
 - Cannot interact with editor UI elements (dropdowns, dialog buttons, context menus)
-- Niagara module inputs are unreliable (see Niagara section)
+- `set_niagara_dynamic_input` still broken (use Python or bake the value)
 
 **Recently fixed** (don't reach for Python first for these):
-- Object reference properties (Sound, StaticMesh, Material, WidgetClass) now work via `set_component_property` — pass the asset path as `property_value`.
+- Object reference properties (Sound, StaticMesh, Material, WidgetClass, NiagaraSystem) now work via `set_component_property` — pass the asset path as `property_value`. Asset-path form auto-expands to the generated class for `TSubclassOf<>` properties.
 - Generic UMG widget creation: `add_widget_element(widget_type="ProgressBar"|"VerticalBox"|...)` — see UMG section.
+- Niagara: `create_niagara_system` returns working systems (is_active=true); `set_niagara_module_input` works for float/int/bool/vector2/vector3/position/color via the override-pin path. Use `list_module_inputs` first to discover input names.
+- `add_blueprint_component` resolves common plugin types: `Niagara`, `Widget`, `PostProcess`, `Decal`, `Paper`, etc.
 - `save_asset(asset_path)` and `save_dirty_assets()` for non-level persistence.
+- `compile_blueprint` returns errors[], warnings[], status enum (UpToDate, UpToDateWithWarnings, Error, Dirty).
+- `get_component_property` reads any property — use to verify a write took effect.
 
 ### Pixel Streaming (localhost:80)
 
@@ -187,40 +194,56 @@ After saving a Blueprint, run `dump_blueprint_graph` to confirm your nodes survi
 
 ## Niagara Particle System
 
-### CRITICAL: `create_niagara_system` Creates Broken Systems
+### Creating a Niagara System
 
-**`create_niagara_system` + `add_niagara_emitter` produces systems that NEVER emit particles.** The system compiles, `dump_niagara_system` reports correct modules, `get_niagara_emitters` looks normal — but `is_active: false` when spawned, zero particles rendered. Even forcing activation via Python produces zero particles. 100% reproducible across all templates.
+```bash
+create_niagara_system(asset_path="/Game/Effects/MyEffect", template="default")
+```
 
-### Working Pattern: `duplicate_asset`
+`template` resolves to `/Niagara/DefaultAssets/DefaultSystem` for keywords (`default`, `empty`, `sprite`, `fountain`) — the resulting system inherits a working sprite emitter and `is_active: true` when spawned. Pass a `/Game/...` path to duplicate any working system you already have.
 
-1. **Find an existing working Niagara system:** `find_assets(class_filter="NiagaraSystem", path_filter="/Game/")`. If none exist, the user must create one manually in the Niagara editor (once only).
-2. `duplicate_asset(source_path="...", destination_path="...")`
-3. `set_niagara_material` — works on duplicated systems
-4. `set_niagara_curve` — works for ScaleColor and FloatFromCurve
-5. Spawn it: `spawn_niagara_effect(system_path="...", location={x:0,y:0,z:0})` or via the Blueprint `SpawnSystemAtLocation` node
-6. **Verify:** `get_actor_properties("...")` → check `is_active: true`. If false, system is broken.
-7. **Visual verify:** Use PIE screenshot or pixel streaming. Editor screenshots don't capture live particles.
+The previous factory-based creation produced systems that compiled cleanly but never emitted particles (is_active stayed false even after force-activate). The fix duplicates `DefaultSystem` instead, bypassing the empty-system bug entirely.
 
-**Use `dump_niagara_system(system_path="...")` to inspect a system before duplicating it** — confirms it has working emitters and renderers.
+### Setting Module Inputs
 
-### What's Broken Everywhere
+Two-step pattern — list first, then set:
 
-- `set_niagara_module_input` — returns "Input not found" for most inputs (SpawnRate, Loop Duration, Gravity, sprite size). Enum inputs like Loop Behavior sometimes work.
-- `set_niagara_dynamic_input` — BROKEN. "Failed to load random range script."
-- `add_blueprint_component` for NiagaraComponent — returns "Unknown component type."
-- `add_niagara_component` — only adds to level actor instances, not Blueprint definitions.
+```bash
+# 1. Discover the actual user-facing inputs (these are NOT the same as get_niagara_modules' inner pins)
+list_module_inputs(system_path="...", emitter_name="Fountain",
+                   module_name="SpawnRate", script_usage="emitter_update")
+# → [{name:"Module.SpawnRate", type:"NiagaraFloat", value_type:"float"}, ...]
 
-### NiagaraComponent in Blueprints — Workaround
+# 2. Set using the discovered name (short or full handle both accepted)
+set_niagara_module_input(system_path="...", emitter_name="Fountain",
+                        module_name="SpawnRate", input_name="SpawnRate",
+                        script_usage="emitter_update", value=250.0)
+```
 
-Use `SpawnSystemAtLocation` from NiagaraFunctionLibrary as a Blueprint function node:
-- `add_blueprint_function_node(function_name="SpawnSystemAtLocation", target_class="NiagaraFunctionLibrary")`
-- Set `SystemTemplate` pin: `/Game/Path/NS_Asset.NS_Asset`
-- Set `bAutoDestroy=true`, `bAutoActivate=true`
-- Wire `GetActorLocation` to the `Location` pin
+Supported `value_type` for `set_niagara_module_input`: float, int, bool, vector2, vector3, position, color. The error path on a wrong input_name lists what was available.
 
-### Particle Appearance Limitations
+`script_usage` values: `particle_spawn`, `particle_update`, `emitter_spawn`, `emitter_update`, `system_spawn`, `system_update`. Same module name can appear in multiple stages (e.g., SpawnRate in emitter_update vs Initialize Particle in particle_spawn) — the script_usage disambiguates.
 
-You inherit the source system's velocity direction and spawn rate because `set_niagara_module_input` can't change most parameters. If you need exhaust smoke but the source is a Fountain (upward + gravity), particles shoot up, not backward. Choose the source system carefully or ask the user to create one with the right baseline behavior.
+### Spawning and Verifying
+
+```bash
+spawn_niagara_effect(system_path="/Game/Effects/MyEffect",
+                    location={x:0,y:0,z:200}, name="Test")
+get_niagara_actors(system_filter="MyEffect")
+# → confirms is_active: true
+```
+
+Editor screenshots don't capture live particles — use PIE screenshot or pixel streaming for visual verification.
+
+### Still Broken
+
+- `set_niagara_dynamic_input` — "Failed to load random range script." Use Python or bake the value.
+
+### NiagaraComponent in Blueprints
+
+`add_blueprint_component(component_type="Niagara", component_name="VFX")` works directly now — the component_type lookup falls back to `/Script/Niagara.NiagaraComponent`. Pair with `set_component_property(property_name="Asset", property_value="/Game/.../NS_Foo")` to assign the system.
+
+For runtime spawning from a Blueprint graph, `SpawnSystemAtLocation` from NiagaraFunctionLibrary still applies.
 
 ---
 
@@ -365,9 +388,14 @@ Two paths:
 
 ```
 add_blueprint_component(blueprint_path="...", component_type="Widget", component_name="HealthWidget")
+set_component_property(blueprint_path="...", component_name="HealthWidget",
+                       property_name="WidgetClass",
+                       property_value="/Game/UI/WBP_HealthBar")
 ```
 
-Setting the `WidgetClass` property via `set_component_property` is unreliable. Set it via a Blueprint function node calling `SetWidgetClass` in the construction script or BeginPlay. Default draw mode is Screen Space; for world-space billboard, set `Space` to `"World"` via the Blueprint graph.
+`WidgetClass` is a `TSubclassOf<UUserWidget>` (an FClassProperty). Pass either the asset path (`/Game/UI/WBP_HealthBar`) or the full generated-class path (`/Game/UI/WBP_HealthBar.WBP_HealthBar_C`); the asset-path form auto-expands.
+
+Default draw mode is Screen Space; for world-space billboard, set `Space` to `"World"` via the same `set_component_property` call.
 
 ### Bind Widget Events to Blueprint Functions
 
@@ -482,12 +510,12 @@ Read that file before working on any MetaHuman command implementation or debuggi
 | Error | Cause | Fix |
 |---|---|---|
 | `Unsupported property type 'X' for property 'Y'` | Property is a struct, array, map, or other unsupported reflection type | Use a Blueprint function node (Set… or batch_edit_blueprint_nodes) — `set_component_property` covers bool/int/float/double/string/name + object/soft-object/class/soft-class refs only |
-| `Unknown component type` | `add_blueprint_component` with "Niagara" or "NiagaraComponent" | Use `SpawnSystemAtLocation` Blueprint node instead |
-| `Input not found` (set_niagara_module_input) | Most Niagara module inputs unreachable via MCP | Accept default or use Python |
+| `Unknown component type` | Plugin component type that the module-prefix fallback didn't catch | Pass the fully qualified class path (e.g. `/Script/MyPlugin.MyComponent`). Common ones (Engine, Niagara, UMG, Paper2D, MovieScene, CinematicCamera) are auto-resolved. |
+| `Input '<name>' not found in module '<X>'. Available inputs: [...]` | Wrong input name passed to set_niagara_module_input | The error message lists the valid names. Use the short name (`SpawnRate`) or the full handle (`Module.SpawnRate`). Run list_module_inputs first if you don't know what's there. |
 | `Failed to load random range script` | `set_niagara_dynamic_input` is broken | No MCP workaround; use Python or bake the value |
 | `bExpectsNone` crash at PIE | Float literal on Audio-type pin in MetaSound | Restart editor, remove the literal, use audio buffer connections |
 | `RegisteredElementType` crash | Referenced mesh deleted/modified, or rapid spawn/delete sequence | Restart editor. Run `get_asset_references` before deleting anything. |
-| `is_active: false` on Niagara actor | System created with `create_niagara_system` | Delete it, `duplicate_asset` a working system instead |
+| `is_active: false` on Niagara actor | Pre-2026-04-30: factory-created system. Now fixed — re-create the system; create_niagara_system duplicates DefaultSystem under the hood and produces is_active=true | n/a |
 | Widget blank at runtime | `CreateWidget` missing owning player context | Use `GetPlayerController(0)` as the Outer pin |
 | Material shows no bloom | Emissive intensity ≤ 1.0 or Bloom disabled in Post Process | Set emissive multiplier > 1.0 (try 5.0) |
 | Blueprint nodes missing after save | Silent save failure | Run `dump_blueprint_graph` to verify, recreate if missing |
