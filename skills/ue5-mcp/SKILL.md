@@ -107,8 +107,12 @@ Well-supported operations:
 
 - Cannot send keyboard/mouse input during PIE
 - Cannot interact with editor UI elements (dropdowns, dialog buttons, context menus)
-- Cannot set object reference properties on components (Sound, Mesh refs via `set_component_property` returns "Unsupported property type")
 - Niagara module inputs are unreliable (see Niagara section)
+
+**Recently fixed** (don't reach for Python first for these):
+- Object reference properties (Sound, StaticMesh, Material, WidgetClass) now work via `set_component_property` — pass the asset path as `property_value`.
+- Generic UMG widget creation: `add_widget_element(widget_type="ProgressBar"|"VerticalBox"|...)` — see UMG section.
+- `save_asset(asset_path)` and `save_dirty_assets()` for non-level persistence.
 
 ### Pixel Streaming (localhost:80)
 
@@ -170,7 +174,14 @@ Screenshots show editor sprites (component icons) that look like particles but a
 3. Use pixel streaming for real-time visual confirmation
 
 ### Save Frequently
-Niagara assertion and MetaSound crashes revert unsaved changes. There is no `save_asset` MCP tool — use `save_level()` to persist the current level and its dirty assets, or `run_console_command("SaveAll")` for a full editor save. After saving a Blueprint, run `dump_blueprint_graph` to confirm your nodes survived — silent save failures do happen.
+Niagara assertion and MetaSound crashes revert unsaved changes. Save options:
+
+- `save_level()` — saves the current level and its dirty assets.
+- `save_asset(asset_path="/Game/Path/AssetName")` — saves a single asset by content path. Returns `{saved, was_dirty}`.
+- `save_dirty_assets(include_maps=false)` — saves every dirty content package (or also map packages with `include_maps=true`). Returns counts. This is the right tool after a batch of edits across multiple Blueprints/materials/widgets.
+- `run_console_command("SaveAll")` — full editor save, slowest path.
+
+After saving a Blueprint, run `dump_blueprint_graph` to confirm your nodes survived — silent save failures do happen.
 
 ---
 
@@ -277,7 +288,7 @@ Use `blend_mode="Translucent"` and `shading_model="Unlit"` — lit particle mate
 
 - To a static mesh actor: `set_actor_material(actor="ActorName", material_slot=0, material="/Game/Materials/M_Name.M_Name")`
 - To a Niagara system: `set_niagara_material` (reliable path)
-- To a Blueprint component: Use a `SetMaterial` node in BeginPlay — `set_component_property` for material is unreliable.
+- To a Blueprint component: `set_component_property(property_name="OverrideMaterials[0]", property_value="/Game/Materials/M_Foo.M_Foo")` works for component-defaults. For runtime swap, `SetMaterial` Blueprint node still applies.
 
 ### Material Compilation Lag
 
@@ -295,9 +306,9 @@ After creating or modifying, shader compilation takes seconds to minutes. Don't 
 create_umg_widget_blueprint(widget_name="WBP_HealthBar", path="/Game/UI", parent_class="UserWidget")
 ```
 
-### Adding Widget Elements — Limited Set
+### Adding Widget Elements
 
-ECABridge has dedicated add commands for **TextBlock, Button, and Image only**:
+Three dedicated commands for the common cases (with richer initial setup):
 
 ```
 add_text_block_to_widget(widget_path=".../WBP_HealthBar", text_block_name="HealthLabel",
@@ -306,14 +317,23 @@ add_button_to_widget(widget_path="...", button_name="StartButton", text="Start")
 add_image_to_widget(widget_path="...", image_name="Icon")
 ```
 
-**Critical limitation:** There is **no direct add command** for `ProgressBar`, `CanvasPanel`, `VerticalBox`, `HorizontalBox`, `Overlay`, or `Border`. For a health bar visualization, your options are:
+For everything else, use `add_widget_element` — generic across all UMG classes:
 
-1. **Image with scaled width** — animate the image's `RenderTransform` scale via MVVM binding to fake a progress fill.
-2. **Two stacked images** — background + foreground, foreground width tied to a viewmodel float.
-3. **Ask the user to add the ProgressBar manually** in the Widget Designer, then bind to it via MVVM.
-4. **Use Slate via Python** — the `unreal` module exposes more widget types than MCP does.
+```
+add_widget_element(widget_path="...", widget_type="ProgressBar", element_name="HealthBar",
+                   position={x:100,y:100}, size={width:300,height:30},
+                   properties={Percent:0.75})
 
-Don't invent tool names like `add_progress_bar_to_widget` — they don't exist.
+add_widget_element(widget_path="...", widget_type="VerticalBox", element_name="Stack")
+add_widget_element(widget_path="...", widget_type="Border", element_name="Frame",
+                   parent_name="Stack")  # nested inside Stack
+```
+
+`widget_type` is the unqualified UMG class name (`ProgressBar`, `VerticalBox`, `HorizontalBox`, `CanvasPanel`, `Border`, `Spacer`, `Overlay`, `ScrollBox`, `SizeBox`, `ScaleBox`, `Slider`, `CheckBox`, `GridPanel`, `UniformGridPanel`, `RichTextBlock`, `Throbber`, `CircularThrobber`, `NamedSlot`, `BackgroundBlur`, `RetainerBox`) or a fully qualified path (`/Script/UMG.ProgressBar`, `/Script/PluginX.MyWidget`).
+
+Optional `parent_name` attaches under an existing panel. Without it, the new element goes on the root canvas — or, if the tree has no root yet and the new element is itself a panel, it becomes the root. `position` and `size` only apply on a CanvasPanel parent. `properties` is a JSON object applied via reflection (one entry per UPROPERTY on the constructed widget). The result includes `properties_set` and any `properties_failed` with a per-entry reason.
+
+For a health bar: one ProgressBar element with `properties: {Percent: <float>}` is the right pattern. MVVM-bind the Percent property afterwards if you need runtime updates.
 
 ### MVVM Bindings (the real binding API)
 
@@ -412,10 +432,9 @@ Key rules:
 ### AudioComponent Setup
 
 1. `add_blueprint_component(component_type="Audio")` — NOT `"AudioComponent"`
-2. `set_component_property(property="bAutoActivate", value="false")`
-3. Cannot set Sound property via MCP — use a `SetSound` function node in BeginPlay instead
-4. Set the `NewSound` pin to the asset path: `/Game/Audio/MySound.MySound`
-5. Add `Play` / `Stop` at state transitions
+2. `set_component_property(property_name="bAutoActivate", property_value=false)`
+3. `set_component_property(property_name="Sound", property_value="/Game/Audio/MySound.MySound")` — works directly now (FObjectProperty handling). For runtime swaps, you can still use a `SetSound` Blueprint node.
+4. Add `Play` / `Stop` at state transitions
 
 ### Inserting Nodes Into Existing Exec Chains
 
@@ -462,7 +481,7 @@ Read that file before working on any MetaHuman command implementation or debuggi
 
 | Error | Cause | Fix |
 |---|---|---|
-| `Unsupported property type` | Tried `set_component_property` on an object reference (Sound, Mesh) | Add a Set function node (SetSound, SetStaticMesh) in the Blueprint graph |
+| `Unsupported property type 'X' for property 'Y'` | Property is a struct, array, map, or other unsupported reflection type | Use a Blueprint function node (Set… or batch_edit_blueprint_nodes) — `set_component_property` covers bool/int/float/double/string/name + object/soft-object/class/soft-class refs only |
 | `Unknown component type` | `add_blueprint_component` with "Niagara" or "NiagaraComponent" | Use `SpawnSystemAtLocation` Blueprint node instead |
 | `Input not found` (set_niagara_module_input) | Most Niagara module inputs unreachable via MCP | Accept default or use Python |
 | `Failed to load random range script` | `set_niagara_dynamic_input` is broken | No MCP workaround; use Python or bake the value |
