@@ -47,6 +47,7 @@ ECABridge includes deep introspection commands that serialize any UE5 asset into
 | `dump_level(max_actors=100)` | All actors with transforms, components, tags (lightweight or deep mode) |
 | `dump_asset(asset_path)` | Full JSON of any asset — all UPROPERTYs, sub-objects, references, metadata |
 | `get_component_property(blueprint_path, component_name, property_name)` | Read complement to set_component_property — verify a property landed |
+| `get_blueprint_components(blueprint_path, include_overrides=true)` | List components with per-component property overrides (template values that differ from class defaults). Use to debug "this component isn't behaving like a fresh one." |
 | `find_assets(class_filter, path_filter)` | Search asset registry by class, path, or name wildcard |
 | `get_asset_references(asset_path, direction)` | Dependency graph — what references what (use before deleting anything) |
 | `dump_metasound_graph(metasound_path)` | All MetaSound nodes, pins, connections, source inputs/outputs |
