@@ -13,7 +13,9 @@ description: >
 
 # UE5 MCP Development Skill
 
-Battle-tested patterns for working with Unreal Engine 5 through ECABridge MCP tools (390+ tools on localhost:3000), pixel streaming, and Python editor scripting. Every piece of advice here comes from actual failures, crashes, and debugging sessions — not documentation.
+Battle-tested patterns for working with Unreal Engine 5 through ECABridge MCP tools (400+ tools on localhost:3000, varies by engine plugins), pixel streaming, and Python editor scripting. Every piece of advice here comes from actual failures, crashes, and debugging sessions — not documentation.
+
+Canonical example payloads for ~20 commands live in the plugin repo at `scripts/smoke-test.py` — when in doubt about the shape of a call, look there first.
 
 **ECABridge plugin:** https://github.com/ibrews/ECABridge  
 **This skill:** https://github.com/ibrews/ue5-mcp
@@ -30,6 +32,7 @@ Run these steps at the start of every UE5 MCP session before doing any work.
 4. **Before setting Niagara module inputs**, call `list_module_inputs(...)` for the module — the function-call pin names from `get_niagara_modules` are NOT the same as the user-facing input names.
 5. **Verify pixel streaming if needed** — `tabs_context_mcp` to get the current tab ID. Activate before starting, not mid-task.
 6. **Save after every meaningful change.** `save_asset(asset_path)` for one asset, `save_dirty_assets()` for everything dirty in memory, `save_level()` for the current level, or `run_console_command("SaveAll")` for a full editor save.
+7. **Trust `tools/list`, not this manual.** ECABridge runs from a single `main` branch on both UE 5.7 and UE 5.8, and individual commands are gated on optional engine plugins (Mutable, MovieRenderPipeline, MetaHumanCharacter, Niagara, MetaSound, ControlRig, GameplayAbilities, ICVFX, RenderDoc, DataValidation, etc.). Depending on which plugins the host project enables and which UE version it targets, **~5–30 commands may be absent or present** versus what this skill describes. Approximate surfaces: UE 5.7 ≈ 376 commands; UE 5.8 ≈ 402+ commands. If a tool name in this manual isn't in your `tools/list`, the project's plugin set excluded it — don't try to call it, and don't assume the manual is wrong about everything else.
 
 ---
 
@@ -74,6 +77,60 @@ find_assets(class_filter="NiagaraSystem", path_filter="/Game/")
 
 ---
 
+## Programmatic Toolset — Python Sandbox
+
+**Read this before you fire off five sequential tool calls.** ECABridge ships a server-side Python execution surface. Agents that don't know it exists make N sequential MCP round-trips and burn context; agents that do collapse the same work into one call and only see the aggregated result.
+
+| Command | Purpose |
+|---|---|
+| `execute_script(script)` | Run a Python script inside the editor process. Has full access to UE's `unreal` module and every registered ECA command. |
+| `get_execution_environment()` | Introspect the sandbox — Python version, what's importable, what subsystems are reachable, current world/level context. Cheap; call it once at session start if you plan to use `execute_script`. |
+
+### The `def run() -> dict` convention
+
+Your script should define a top-level `run()` function. Its return value becomes the structured `command_result` in the MCP response; anything you `print()` goes into `log_output`.
+
+```python
+def run() -> dict:
+    import unreal
+    actors = unreal.EditorLevelLibrary.get_all_level_actors()
+    print(f"counted {len(actors)} actors")  # → log_output
+    return {                                  # → command_result
+        "count": len(actors),
+        "classes": sorted({a.get_class().get_name() for a in actors}),
+    }
+```
+
+- Return value must be JSON-serializable (dict / list / str / int / float / bool / None).
+- Uncaught exceptions return as an MCP error response with the full Python traceback.
+
+### Chain ECA commands from inside the sandbox
+
+You can call any registered ECABridge command via the `ECA` shim — same names, same args, but no MCP round-trip per call. This is the headline use case: collapse N sequential agent turns into one.
+
+```python
+def run() -> dict:
+    # Find every enemy blueprint, dump its graph, return all in one response
+    found = ECA.find_assets(class_filter="Blueprint", path_filter="/Game/Enemies/")
+    graphs = {}
+    for entry in found.get("assets", []):
+        path = entry["path"]
+        graphs[path] = ECA.dump_blueprint_graph(blueprint_path=path)
+    return {"count": len(graphs), "graphs": graphs}
+```
+
+Without `execute_script` that's 1 + N agent turns (one `find_assets`, then one `dump_blueprint_graph` per result, with the LLM round-tripping between each). With `execute_script` it's one turn.
+
+### Honest caveats
+
+- **Not a security sandbox.** `execute_script` has full UE Python access — file I/O, subprocess, anywhere `unreal` + `os` will go. Treat it like `exec()` in any other dev environment. Only run it from trusted agents you'd let drive a developer's machine.
+- **Editor thread.** Like every ECA command, your script runs on the main thread. Long tight loops hitch the editor. For huge sweeps, batch into multiple `execute_script` calls.
+- **No streaming.** The result returns at script end; you don't get partial output as it runs. For multi-minute work, write progress to a Note actor (or disk) and poll it from a follow-up call.
+
+When unsure what's importable or how to reach a subsystem, call `get_execution_environment()` first — it's cheaper than a failed script.
+
+---
+
 ## Tool Strategy: When to Use What
 
 ### Quick Decision Table
@@ -95,7 +152,28 @@ find_assets(class_filter="NiagaraSystem", path_filter="/Game/")
 
 ### ECABridge MCP Tools (Primary)
 
-390+ tools on `localhost:3000`. Categories include: Actor, Blueprint, Blueprint Node, Material, Material Node, Mesh, Niagara, MetaSound, MVVM, Widget/UMG, Sequencer, Animation, Lighting, Environment/PCG, AI/Navigation, DataTable, Editor, Asset.
+400+ tools (varies by engine plugins) on `localhost:3000`. Categories include: Actor, Blueprint, Blueprint Node, Material, Material Node, Mesh, Niagara, MetaSound, MVVM, Widget/UMG, Sequencer, Animation, Lighting, Environment/PCG, AI/Navigation, DataTable, Editor, Asset, MetaHuman, Programmatic (Python sandbox), Source Control, Observability (Insights / Stats / Memory / Frame Capture / Diagnostic Bundle), Editor UX (CVars, viewport bookmarks, workspace layouts, content browser filters).
+
+### Source Control
+
+Wraps `ISourceControlModule` — works against Perforce, Git, or whichever provider the project has connected. Gracefully no-ops if no SCC is configured.
+
+- `check_out_asset`, `revert_asset`, `mark_for_add`, `mark_for_delete` — file-level mutations
+- `create_changelist`, `submit_changelist`, `list_changelists`, `move_to_changelist` — Perforce changelist CRUD
+- `reconcile_offline_changes` — detect files modified outside the editor and update SCC state
+- `diff_asset_against_depot` — text diff against depot HEAD (binary assets return a "use UE diff tool" pointer)
+- `validate_before_submit` — run asset validators across a changelist; refuses to submit if they fail
+- `get_source_control_status` — read-only state for a given asset
+
+### Observability
+
+Performance and post-mortem work. Useful when an agent is asked "why is this frame slow?" rather than "build me a thing."
+
+- `start_insights_trace` / `stop_insights_trace` / `dump_insights_summary` — Unreal Insights with a small response-shaped summary (top-N hot functions, frame time, CPU vs GPU split)
+- `enable_stat_group` / `disable_stat_group` / `dump_stat_values` — wraps `stat unit`, `stat gpu`, `stat memory`, `stat scenerendering`, etc.
+- `capture_frame` — RenderDoc / Insights / GPU dump triggers; returns artifact path
+- `snapshot_memory` / `diff_memory_snapshots` — labeled allocator snapshots and diff (top allocators, biggest objects, biggest growth)
+- `capture_diagnostic_bundle` — one-call "tell me what's wrong": zip of screenshot, log tail, all CVars, scene stats, top-10 actors-by-cost, recent Insights trace. Ideal for support tickets.
 
 Well-supported operations:
 - Creating/modifying Blueprints (components, variables, node graphs via Blueprint Lisp or batch_edit)
@@ -523,6 +601,60 @@ ECABridge includes 22 MetaHuman commands for procedural character creation. The 
 `~/knowledge/departments/engineering/metahuman-mcp-reference.md`
 
 Read that file before working on any MetaHuman command implementation or debugging a MetaHuman pipeline failure. The `docs/METAHUMAN.md` in the ECABridge repo is a pointer to this same file.
+
+---
+
+## Reading Validation Errors — The Schema Is In The Response
+
+When ECABridge rejects a call for a missing or wrong-type argument, the error response **embeds the full `inputSchema` for that tool inline**. Read it. Don't guess at the fix. Don't describe what you think the schema should be — copy what the response tells you it actually is.
+
+### Wasted-turns pattern
+
+> Agent calls `set_niagara_module_input` without `script_usage`.
+> Server returns: `"Missing required argument: script_usage"`
+> Agent: "I think it's `spawn`?" → fails → "Maybe `update`?" → fails → "Let me try `Spawn`?" → three wasted turns.
+
+### One-turn pattern
+
+> Same call, same error — but the response now also includes:
+> ```json
+> {
+>   "error": "Missing required argument: script_usage",
+>   "inputSchema": {
+>     "properties": {
+>       "script_usage": {
+>         "type": "string",
+>         "enum": ["particle_spawn","particle_update","emitter_spawn","emitter_update","system_spawn","system_update"]
+>       },
+>       "...": "..."
+>     },
+>     "required": ["system_path","emitter_name","module_name","input_name","script_usage","value"]
+>   }
+> }
+> ```
+> Agent reads the enum, picks the correct value, retries — done in one turn.
+
+**Rule:** the embedded schema in the error response is authoritative. This skill manual is approximate. If they disagree, trust the schema.
+
+---
+
+## Screenshots — Inline Image Content
+
+The screenshot commands return the PNG inline as MCP `image` content blocks **when you omit `file_path`**:
+
+```json
+{ "type": "image", "mimeType": "image/png", "data": "<base64-encoded PNG>" }
+```
+
+| Command | Use for |
+|---|---|
+| `take_camera_screenshot` | Editor camera / viewport view |
+| `take_gameplay_screenshot` | Live PIE / SIE frame |
+| `take_depth_screenshot` | Scene depth buffer |
+| `take_metahuman_editor_screenshot` | The floating `MH_<Name>` MetaHuman editor Slate window |
+| `take_screenshots_sweep` | Multi-angle / multi-camera capture in one call |
+
+**Recommendation:** prefer the inline form — your client renders the image directly in the conversation, no disk round-trip and no file path bookkeeping. Pass `file_path` only when (a) your MCP client doesn't render image content blocks, or (b) you specifically need the file on disk for downstream tooling (render pipeline, ticket attachment, baselining).
 
 ---
 
