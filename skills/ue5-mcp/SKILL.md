@@ -1,19 +1,22 @@
 ---
 name: ue5-mcp
 description: >
-  Unreal Engine 5 development via the ECABridge MCP plugin, pixel streaming, and Python editor scripting.
-  Use this skill whenever the user's session has Unreal Engine MCP tools available (tools with names like
-  create_blueprint, create_actor, add_material_node, create_niagara_system, dump_blueprint_graph, etc.) or
-  when the user mentions Unreal Engine, UE5, Blueprints, Niagara, MetaSound, or any UE game development
-  workflow. Auto-trigger when unreal-editor MCP tools are detected. This skill contains hard-won knowledge
-  from real debugging sessions — crash patterns, broken APIs, working workarounds, and the exact tool call
-  patterns that actually succeed. Ignoring this skill when UE5 MCP tools are present will lead to hours of
-  wasted time hitting known dead ends.
+  Unreal Engine 5 development via the ECABridge MCP plugin (~520+ tools), in-process Slate input injection,
+  pixel streaming, and Python editor scripting. Use this skill whenever the user's session has Unreal
+  Engine MCP tools available (tools with names like create_blueprint, create_actor, add_material_node,
+  create_niagara_system, dump_blueprint_graph, summarize_blueprint, take_blueprint_editor_screenshot,
+  click_slate_widget, name_blueprint_node, build_plugin, etc.) or when the user mentions Unreal Engine,
+  UE5, Blueprints, Niagara, MetaSound, or any UE game development workflow. Auto-trigger when
+  unreal-editor MCP tools are detected. This skill contains hard-won knowledge from real debugging
+  sessions — crash patterns, broken APIs, working workarounds, transactional undo semantics, the
+  warnings + _meta response conventions, and the exact tool call patterns that actually succeed.
+  Ignoring this skill when UE5 MCP tools are present will lead to hours of wasted time hitting known
+  dead ends.
 ---
 
 # UE5 MCP Development Skill
 
-Battle-tested patterns for working with Unreal Engine 5 through ECABridge MCP tools (400+ tools on localhost:3000, varies by engine plugins), pixel streaming, and Python editor scripting. Every piece of advice here comes from actual failures, crashes, and debugging sessions — not documentation.
+Battle-tested patterns for working with Unreal Engine 5 through ECABridge MCP tools (~520+ tools on localhost:3000, varies by engine plugins), in-process Slate input injection, pixel streaming, and Python editor scripting. Every piece of advice here comes from actual failures, crashes, and debugging sessions — not documentation.
 
 Canonical example payloads for ~20 commands live in the plugin repo at `scripts/smoke-test.py` — when in doubt about the shape of a call, look there first.
 
@@ -32,7 +35,9 @@ Run these steps at the start of every UE5 MCP session before doing any work.
 4. **Before setting Niagara module inputs**, call `list_module_inputs(...)` for the module — the function-call pin names from `get_niagara_modules` are NOT the same as the user-facing input names.
 5. **Verify pixel streaming if needed** — `tabs_context_mcp` to get the current tab ID. Activate before starting, not mid-task.
 6. **Save after every meaningful change.** `save_asset(asset_path)` for one asset, `save_dirty_assets()` for everything dirty in memory, `save_level()` for the current level, or `run_console_command("SaveAll")` for a full editor save.
-7. **Trust `tools/list`, not this manual.** ECABridge runs from a single `main` branch on both UE 5.7 and UE 5.8, and individual commands are gated on optional engine plugins (Mutable, MovieRenderPipeline, MetaHumanCharacter, Niagara, MetaSound, ControlRig, GameplayAbilities, ICVFX, RenderDoc, DataValidation, etc.). Depending on which plugins the host project enables and which UE version it targets, **~5–30 commands may be absent or present** versus what this skill describes. Approximate surfaces: UE 5.7 ≈ 376 commands; UE 5.8 ≈ 402+ commands. If a tool name in this manual isn't in your `tools/list`, the project's plugin set excluded it — don't try to call it, and don't assume the manual is wrong about everything else.
+7. **Trust `tools/list`, not this manual.** ECABridge runs from a single `main` branch on both UE 5.7 and UE 5.8, and individual commands are gated on optional engine plugins (Mutable, MovieRenderPipeline, MetaHumanCharacter, Niagara, MetaSound, ControlRig, GameplayAbilities, ICVFX, RenderDoc, DataValidation, etc.). Depending on which plugins the host project enables and which UE version it targets, **~5–30 commands may be absent or present** versus what this skill describes. Approximate surfaces post-2026-05-20 fanout: UE 5.7 ≈ 510 commands; UE 5.8 ≈ 525+ commands. If a tool name in this manual isn't in your `tools/list`, the project's plugin set excluded it — don't try to call it, and don't assume the manual is wrong about everything else.
+8. **Read result `_meta` blocks.** Every `dump_*`/`find_*`/`list_*` result now carries a `_meta` object with `method`, `coverage`, `confidence` (HIGH/MEDIUM/LOW), and optional `notes`. MEDIUM/LOW means items were skipped — don't act on the result as if it's complete. See "Reading warnings and `_meta`" below.
+9. **Read `_meta.warnings`.** When you misspell a param key, the registry now flags it (`"Unknown param 'function_name' — did you mean 'FunctionName'?"`) instead of silently ignoring. Surfaces in `_meta.warnings` on the MCP response. Fix the call and retry.
 
 ---
 
@@ -138,13 +143,23 @@ When unsure what's importable or how to reach a subsystem, call `get_execution_e
 | What you need to do | Use |
 |---|---|
 | Read any asset structure (Blueprint, material, Niagara, widget) | `dump_*` Rosetta Stone commands first |
+| Understand a Blueprint before editing it (compact, summary-shaped) | `summarize_blueprint` — way cheaper than `dump_blueprint_graph` for context |
+| Find who calls a function / reads a variable / fires an event | `find_blueprint_callers` |
+| Diff two Blueprints (topology delta) | `diff_blueprints` |
+| Find assets with zero referencers (cleanup candidates) | `find_unused_assets` |
 | Create/modify Blueprint graphs, components, variables | MCP |
+| Take slide-ready BP screenshot (single call, framed, hide overlays) | `take_blueprint_editor_screenshot` |
+| Reference a node again later without passing 36-char GUIDs | `name_blueprint_node` then use `node_name` in subsequent calls |
 | Create/edit materials, Niagara systems, MetaSounds | MCP |
 | Spawn, move, delete level actors | MCP |
 | UMG widgets, DataTables | MCP |
-| Keyboard/mouse input during PIE | Pixel streaming |
-| Click editor UI elements (menus, dialogs, dropdowns) | Pixel streaming |
-| Visual verification of live gameplay/particles | Pixel streaming |
+| Keyboard/mouse input during PIE | Pixel streaming (still — Slate input doesn't reach the PIE world) |
+| Click editor UI elements (menus, dialogs, dropdowns) | **Slate Input MCP** (`find_slate_widgets` → `click_slate_widget`) — supersedes pixel streaming for the same-machine case |
+| Type into a focused widget / send keyboard chords | **Slate Input MCP** (`type_slate_text`, `slate_key_chord`) |
+| Capture an open BP editor's graph or any Slate widget | `take_blueprint_editor_screenshot` / `take_slate_widget_screenshot` |
+| Visual verification of live gameplay/particles | Pixel streaming or `take_gameplay_screenshot target="pie"` |
+| Compile the plugin / run automation tests / compile all BPs | **Headless Build & Test MCP** (`build_plugin`, `run_automation_tests`, `compile_project_blueprints`) |
+| Undo an MCP edit | **Ctrl+Z in the editor** — every mutating MCP call is now wrapped in `FScopedTransaction` |
 | Niagara module inputs (SpawnRate, velocity, etc.) | MCP — `list_module_inputs` then `set_niagara_module_input` |
 | Object reference properties on components | MCP — `set_component_property` (handles object/soft-object/class/soft-class refs) |
 | Bulk asset operations, Sequencer control | Python (still — no bulk MCP equivalent yet) |
@@ -200,13 +215,42 @@ Well-supported operations:
 - `compile_blueprint` returns errors[], warnings[], status enum (UpToDate, UpToDateWithWarnings, Error, Dirty).
 - `get_component_property` reads any property — use to verify a write took effect.
 
+### Slate Input — Computer Use Inside The Editor
+
+The Slate Input commands (added 2026-05-20) give you a "computer use" loop **inside the editor process**, with microsecond latency instead of pixel streaming's tens of ms over WebRTC. Same-machine input control should go through these now; pixel streaming is reserved for genuinely remote / cross-machine viewing.
+
+| Command | Use it for |
+|---|---|
+| `find_slate_widgets(text_contains?, widget_type?, window_title?, max_results)` | Discovery — returns a flat list of widgets with `widget_id`, `type`, `accessible_text`, `geometry`. Call this immediately before clicking; widget IDs are session-scoped and can stale on tree rebuild (tab switch, modal open, redraw). |
+| `click_slate_widget(widget_id\|accessible_text\|window_pixel, button?, modifiers?, double_click?)` | Synthesize mouse-down + mouse-up on a widget. Three ways to target it. |
+| `type_slate_text(text, into_focused?, accessible_text?\|widget_id?)` | Synthesize keyboard text into a focused widget. `\n` → Enter, `\t` → Tab. |
+| `slate_key_chord(key, modifiers?)` | Press a chord like Ctrl+S, Cmd+Tab. Accepts UE canonical names (S, F5, Tab) and aliases (Return/Enter, Esc/Escape, BackSpace). |
+| `take_slate_widget_screenshot(widget_id\|accessible_text, file_path?, padding?)` | Capture the rectangle of a specific widget. Pairs with `find_slate_widgets`. |
+
+**The discovery → action loop:**
+```jsonc
+// 1. Discover what's clickable in the current top window
+find_slate_widgets({ text_contains: "Compile" })
+// → { widgets: [{ widget_id: 42, type: "SButton", accessible_text: "Compile", ... }], ... }
+
+// 2. Click it
+click_slate_widget({ widget_id: 42 })
+```
+
+**Limits:**
+- `widget_id` is valid within the same MCP session and only until the Slate tree rebuilds. Always re-discover right before acting.
+- `find_slate_widgets` walks the **top-level window's** tree by default. Pass `window_title` to target a different open window.
+- Pure-keyboard chords don't need a target widget — they go to whatever has focus.
+
 ### Pixel Streaming (localhost:80)
 
-Use for things MCP genuinely can't do. Always call `tabs_context_mcp` first — tab IDs change between sessions. You'll need to click "CLICK TO START" or "DISCONNECTED. CLICK TO RESTART" to activate.
+Use for things Slate Input genuinely can't do. Always call `tabs_context_mcp` first — tab IDs change between sessions. You'll need to click "CLICK TO START" or "DISCONNECTED. CLICK TO RESTART" to activate.
 
-- Game key input during PIE (1, 2, WASD, etc.)
-- Clicking editor UI elements MCP can't reach
-- Real-time visual verification
+- Game key input during PIE (1, 2, WASD, etc.) — Slate Input synthesizes into Slate widgets, not the PIE game world
+- Remote / cross-machine viewing of a running editor
+- Real-time visual verification when polling screenshots isn't enough
+
+**When NOT to use pixel streaming:** clicking editor UI on the same machine. Use Slate Input instead — orders of magnitude faster, no render-thread dependency, no signaling server, no input focus stealing.
 
 **Important:** Pixel streaming captures input focus, blocking the user's editor access. Game viewport needs a click to capture focus before key input works. Audio can't be heard through pixel streaming.
 
@@ -232,6 +276,161 @@ note.tags = [result[:200]]  # Name type, keep short
 Read back via MCP: `get_actor_properties("Note")` → check `tags` array. Delete the Note actor after. Spawn a fresh Note actor for each read — stale actors return stale tags.
 
 **Required plugins:** Python Editor Script Plugin, Python Foundation Packages.
+
+---
+
+## Reading warnings and `_meta` blocks
+
+Two MCP response-layer additions (2026-05-20) you should read every time:
+
+### `_meta.warnings` — the silent-typo catcher
+
+When you call a command with an unknown parameter key, the registry now flags it instead of silently ignoring. Surfaces in the MCP response at `_meta.warnings`:
+
+```json
+{
+  "content": [{ "type": "text", "text": "{...}" }],
+  "_meta": {
+    "warnings": [
+      "Unknown param 'function_name' — did you mean 'FunctionName'?",
+      "Param 'graph' ignored — did you mean 'graph_name'?"
+    ]
+  }
+}
+```
+
+**When you see this:** the call still ran with the params that *were* recognized. Fix the typo and retry. Don't act on the result as if everything you sent applied.
+
+Commands can also append their own warnings (deprecation notices, ambiguous-input nudges).
+
+### `_meta` on `dump_*` / `find_*` / `list_*` / `search_*`
+
+Every read-side command now carries a `_meta` block describing how complete the result is:
+
+```json
+{
+  "graphs": [...],
+  "_meta": {
+    "method": "K2 schema walk + pin reflection",
+    "coverage": "47/47 nodes parsed (100%)",
+    "confidence": "HIGH",
+    "ue_version": "5.7",
+    "notes": []
+  }
+}
+```
+
+| Confidence | Meaning | What to do |
+|---|---|---|
+| `"HIGH"` | Everything parsed cleanly, no silent skips | Trust the result |
+| `"MEDIUM"` | Some items were skipped — see `notes` | Read `notes` before acting; the result is partial |
+| `"LOW"` | Fundamentals failed but a partial header is returned | Treat as failure; re-call or fall back |
+
+`coverage` may be omitted when the denominator is unbounded. `notes` is omitted when empty. `ue_version` is `"5.7"` or `"5.8"` so you can branch on engine.
+
+**The point:** stop acting on dumps as if they're complete. A 12-node graph with `coverage: "10/12 (83%)"` and `confidence: "MEDIUM"` means 2 nodes were skipped — your subsequent edits may break connections to them.
+
+---
+
+## Transactional MCP — Ctrl+Z reverts your edits
+
+As of 2026-05-20, every mutating ECABridge command wraps in `FScopedTransaction`. **Each MCP call becomes one undo step** that the user (or you, via a Slate `slate_key_chord` Ctrl+Z) can revert in the editor.
+
+- Failed commands `Cancel()` the transaction → no garbage in the undo stack
+- Successful commands keep their transaction → one Ctrl+Z reverts
+- Pure-read commands (`dump_*`, `find_*`, `get_*`, `list_*`, etc.) don't create transactions — they're free of undo-stack pollution
+- The transaction name is `"ECABridge: <command_name>"` so the user can see what's about to be undone in the editor's Edit menu
+- Niagara and MetaSound subsystems already had their own per-command `FScopedTransaction` — those nest inside the new registry-level wrap cleanly (UE handles nested transactions as merges)
+
+**Implication for your workflow:**
+- Speculative edits are now safe — if a `set_blueprint_pin_value` ends up wrong, the user (or you via Slate) hits Ctrl+Z and it's gone
+- Multi-step recipes are still N separate undo steps — wrap them in a Python `execute_script` if you want them as a single atomic action
+- The old "BP corruption requires editor restart" failure mode is mostly gone — a bad MCP call now rolls back cleanly
+
+---
+
+## Friendly node names — no more 36-char GUIDs
+
+The `FECANodeNameRegistry` (2026-05-20) is a session-scoped friendly-name → GUID map for Blueprint nodes. Lets you reference nodes by name in subsequent calls instead of passing the raw `A950175C0A412A29B1F97A9B9859215E` GUID around.
+
+**Three patterns:**
+
+```jsonc
+// 1. Auto-register at creation: pass an optional `name` to any add_* command
+add_blueprint_function_node({
+  blueprint_path: "/Game/BP_Foo",
+  function_name: "ApplyDamage",
+  target_class: "Character",
+  name: "DamagePlayer"      // ← registered automatically
+})
+
+// 2. Use the name in subsequent mutating calls
+set_blueprint_pin_value({
+  blueprint_path: "/Game/BP_Foo",
+  graph_name: "EventGraph",
+  node_name: "DamagePlayer",   // ← instead of node_id
+  pin_name: "Damage",
+  pin_value: "50"
+})
+
+// 3. Or name an existing node by GUID
+name_blueprint_node({
+  blueprint_path: "/Game/BP_Foo",
+  graph_name: "EventGraph",
+  node_id: "A950175C0A412A29B1F97A9B9859215E",
+  name: "FirstSpawn"
+})
+```
+
+**Meta-tools for the registry:**
+
+| Command | Use |
+|---|---|
+| `name_blueprint_node` | Register a name for an existing node |
+| `unname_blueprint_node` | Drop a binding |
+| `list_node_names` | Show all current bindings (session-scoped) |
+| `resolve_node_name` | Look up a name without mutating |
+
+**Where `node_name` works as an alias for `node_id`:**
+
+`connect_blueprint_nodes` (both source + target), `delete_blueprint_node`, `disconnect_blueprint_node`, `set_blueprint_pin_value`, `break_pin_connection`, `batch_edit_blueprint_nodes` (per-entry).
+
+**Caveats:** case-sensitive lookup. Names live for the editor session — registry clears on restart. Doesn't replace `node_id` — it's an alias, both still work.
+
+---
+
+## Blueprint Analysis — read-side companions to `dump_blueprint_graph`
+
+`dump_blueprint_graph` is exhaustive (good for editing) but heavy on context. These four read-side commands (2026-05-20) are **summary-shaped** for fitting in an agent's context window.
+
+| Command | Use it for |
+|---|---|
+| `summarize_blueprint(blueprint_path, include_functions?, max_depth?)` | Pseudo-code walk through every event entry. Branch/Cast/Switch annotations. ~80% of common node types covered. Use this to *understand* a BP before editing. |
+| `find_blueprint_callers(function_name\|variable_name\|event_name, target_class?, search_path?)` | Reverse lookup across AssetRegistry — every BP that contains a node referencing this. Returns `{caller_blueprint_path, graph_name, node_id, node_title, context}`. |
+| `diff_blueprints(blueprint_a, blueprint_b, include_pin_values?)` | Topology delta — added/removed nodes, added/removed connections, optional pin-value changes. Doesn't try char-level diff. |
+| `find_unused_assets(search_path?, asset_class?)` | Zero-referrer scan. Skips known roots (UWorld, _C class objects). Returns `{path, class, size_kb}`. |
+
+**Decision rule:** if you need to *understand* a BP before editing it, `summarize_blueprint` first. If you need to *edit* it, `dump_blueprint_graph` first. If you need to *find* something across many BPs, `find_blueprint_callers`.
+
+**Edge cases knowingly skipped** in `summarize_blueprint`: composite/tunnel sub-graphs (labeled, not recursed), macros (labeled `Macro<Name>`, body not inlined), `SwitchEnum` (shows raw pin name, not enum display name), async/latent multi-continuation pins (follows only default exec-out).
+
+---
+
+## Headless Build & Test — verify before you ship
+
+Three commands (2026-05-20) that shell out to UBT / UnrealEditor-Cmd for headless build verification. Useful when an agent edits plugin code, tweaks build settings, or wants to confirm Blueprints still compile across the project.
+
+| Command | Use it for |
+|---|---|
+| `build_plugin(plugin_path?, output_dir?, target_platforms?, compile_only?, timeout_seconds?)` | `RunUAT.bat BuildPlugin` — compile a plugin against the running editor's UE version. `compile_only=true` skips packaging for faster cycles. Returns warnings/errors counts + log_excerpt + log_path. |
+| `run_automation_tests(test_filter?, project_path?, timeout_seconds?, report_path?)` | `UnrealEditor-Cmd -nullrhi -ExecCmds="Automation RunTests ..."`. Returns total/passed/failed/skipped + failed_tests array. Defaults filter to `"ECABridge"`. |
+| `compile_project_blueprints(project_path?, timeout_seconds?, path_filter?)` | `UnrealEditor-Cmd -run=CompileAllBlueprints`. Surfaces BP-wide compilation errors. `path_filter` post-filters the errored list. |
+
+**Where logs go:** `Project/Saved/ECABridge/BuildLogs/<timestamp>-<command>.log` — full output persisted even if the command times out. The result payload includes `log_path` so you can retrieve more than the 4KB tail if needed.
+
+**Platform support:** Windows only at the moment. Mac returns a clear "platform not yet supported" error.
+
+**Use case:** the "agent diagnoses then fixes a bug" loop now closes — make a fix, `compile_blueprint`, run `run_automation_tests` to confirm it didn't break anything else, done.
 
 ---
 
