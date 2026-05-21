@@ -1,11 +1,11 @@
 {
   "name": "ue5-mcp",
-  "version": "0.2.0",
-  "description": "Battle-tested knowledge base for AI-assisted Unreal Engine 5 development via MCP (ECABridge). Covers the 400+ tool surface across UE 5.7 and 5.8, the server-side Python sandbox (execute_script + get_execution_environment) for collapsing multi-call workflows, schema-in-error validation responses, inline image screenshots, source control + observability categories, plus Niagara workarounds, MetaSound crash avoidance, and Blueprint wiring patterns.",
+  "version": "0.3.0",
+  "description": "Server-agnostic field manual for AI agents driving Unreal Engine 5.7 / 5.8 through MCP. Engine-level reflection gotchas, crash patterns, subsystem-specific quirks (Niagara, MetaSound, Materials, Lumen, UMG, audio), the Python-to-MCP data channel workaround, transport requirements, and verify-after-mutate patterns. Works with any MCP server that exposes UE5 functionality — Epic's official ModelContextProtocol plugin, custom servers, or anything else.",
   "author": {
     "name": "ibrews"
   },
   "repository": "https://github.com/ibrews/ue5-mcp",
   "license": "MIT",
-  "keywords": ["unreal-engine", "ue5", "mcp", "ecabridge", "game-development", "niagara", "blueprints", "metasound", "python", "metahuman"]
+  "keywords": ["unreal-engine", "ue5", "mcp", "game-development", "niagara", "blueprints", "metasound", "materials", "python", "metahuman", "lumen", "umg"]
 }
