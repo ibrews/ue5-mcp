@@ -12,8 +12,8 @@ description: >
   trace back to an actual editor crash or hours-long faceplant. Ignoring it
   when UE5 MCP tools are present will lead to wasted time hitting known dead
   ends.
-version: 3.0.0
-date: 2026-05-21
+version: 3.1.0
+date: 2026-05-26
 license: MIT
 ---
 
@@ -150,6 +150,54 @@ an inconsistent state — the node exists but the editor's pin-resolution +
 compile pipeline doesn't see it. Symptoms: phantom "missing node" errors at
 compile, broken connect operations, or nodes that vanish after editor
 reload.
+
+### 2.7 Enum-string resolution has three accepted forms
+
+UENUM-defined enums store their entries as fully-qualified FName forms
+like `EAutoExposureMethod::AEM_Manual`. `UEnum::GetValueByNameString`
+matches the fully-qualified form, but bare short names (`AEM_Manual`) and
+the Python-binding casing the `unreal` module exposes (`AEM_MANUAL` from
+`unreal.EAutoExposureMethod.AEM_MANUAL`) silently miss — those are the
+forms agents most naturally reach for, especially when copying values
+out of `dump_post_process_settings` output or Python docs.
+
+A 3-step resolver covers the common cases:
+
+```cpp
+int64 ResolveEnumValue(UEnum* Enum, const FString& Name)
+{
+    if (!Enum) return INDEX_NONE;
+    int64 Val = Enum->GetValueByNameString(Name);            // EEnumType::ShortName
+    if (Val != INDEX_NONE) return Val;
+    Val = Enum->GetValueByName(FName(*Name));                // FName lookup
+    if (Val != INDEX_NONE) return Val;
+    const int32 N = Enum->NumEnums();                        // case-insensitive
+    for (int32 i = 0; i < N; ++i)                            // suffix-after-::
+    {
+        FString EntryName = Enum->GetNameStringByIndex(i);
+        int32 ColonPos = INDEX_NONE;
+        if (EntryName.FindLastChar(TEXT(':'), ColonPos))
+            EntryName = EntryName.RightChop(ColonPos + 1);
+        if (EntryName.Equals(Name, ESearchCase::IgnoreCase))
+            return Enum->GetValueByIndex(i);
+    }
+    return INDEX_NONE;
+}
+```
+
+Affects every reflection-driven property setter that accepts enum-typed
+JSON strings (`FEnumProperty`, `FByteProperty` whose `Enum` field is
+populated, properties resolved via `StaticEnum<...>()`). The 1-step form
+`Enum->GetValueByNameString(Name, EGetByNameFlags::CaseSensitive)` is
+the most fragile — it rejects everything except the fully-qualified
+form. The fallback chain trades a tiny scan cost (enums rarely have more
+than a few dozen entries) for actually accepting the strings callers
+pass in.
+
+The same pattern applies on the agent side: when calling an MCP tool
+that takes an enum-named string, prefer the C++ short form
+(`AEM_Manual`) — it's accepted by every resolver that follows even
+minimal best practice; the Python-binding uppercase form may not be.
 
 ---
 
@@ -423,6 +471,117 @@ Other UltraDynamicSky notes:
 - Conflicts with existing DirectionalLights — remove or hide them.
 - Rain/snow particles render most visibly in PIE; editor viewport often
   shows the sky but not the particle layer.
+
+### 5.15 Sequencer: extending the playback range doesn't extend track sections
+
+`UMovieScene::SetPlaybackRange(...)` updates the scene's logical playback
+range, but per-track sections (created by `AddNewCameraCut`, `AddSection`
+on a TransformTrack, FloatTrack, etc.) keep their original lengths. The
+camera cut track section in particular bounds what Movie Render Queue
+actually renders — **MRQ stops at the end of the active camera cut
+section regardless of the playback range**. Symptom: a sequence whose
+`GetPlaybackRange()` reports 12 s renders only the first 5 s; the
+returned image count matches the section length, not the playback range.
+
+After extending the playback range, iterate every track on every binding
+and call `SetRange` on every section:
+
+```cpp
+const TRange<FFrameNumber> NewRange = MovieScene->GetPlaybackRange();
+for (UMovieSceneTrack* Track : MovieScene->GetTracks())                       // master tracks
+    for (UMovieSceneSection* Sec : Track->GetAllSections()) Sec->SetRange(NewRange);
+
+if (UMovieSceneTrack* CutTrack = MovieScene->GetCameraCutTrack())             // camera cut
+    for (UMovieSceneSection* Sec : CutTrack->GetAllSections()) Sec->SetRange(NewRange);
+
+for (const FMovieSceneBinding& B : MovieScene->GetBindings())                 // per-binding tracks
+    for (UMovieSceneTrack* T : B.GetTracks())
+        for (UMovieSceneSection* Sec : T->GetAllSections()) Sec->SetRange(NewRange);
+```
+
+Symmetrically: shrinking the playback range while leaving sections long
+is also a no-op for MRQ (sections still play to their end). If you want
+"playback range and sections always match," apply the same loop on every
+range mutation. Real-world failure mode: a sequence's playback range and
+its camera cut section's range drift over a series of edits and the next
+render silently uses whichever happens to be shorter.
+
+### 5.16 Sequencer: channel keys at the same time stack instead of replacing
+
+`FMovieSceneDoubleChannel::AddLinearKey(FrameNumber, Value)` and the
+equivalent on `FMovieSceneFloatChannel` append a key to the channel's
+time-sorted array even if a key already exists at `FrameNumber`. The
+MovieScene tracks both keys as separate entries; on interpolation, the
+first-found one can shadow the just-added one — silently producing the
+wrong animated value. Re-keying the same time looks like a successful
+no-op.
+
+Detect and update in place via the channel's `TMovieSceneChannelData`
+wrapper:
+
+```cpp
+TMovieSceneChannelData<FMovieSceneDoubleValue> Data = Channel->GetData();
+const int32 ExistingIdx = Data.FindKey(FrameNumber);     // exact-frame match
+if (ExistingIdx != INDEX_NONE)
+{
+    TArrayView<FMovieSceneDoubleValue> Values = Data.GetValues();
+    FMovieSceneDoubleValue Updated = Values[ExistingIdx];
+    Updated.Value = NewValue;                            // preserves tangent / interp
+    Values[ExistingIdx] = Updated;
+}
+else
+{
+    Channel->AddLinearKey(FrameNumber, NewValue);
+}
+```
+
+`FindKey` has an optional `InTolerance` parameter (`FFrameNumber(0)` by
+default) for inexact matches. The same pattern applies to
+`FMovieSceneFloatChannel` / `FMovieSceneFloatValue`,
+`FMovieSceneIntegerChannel`, and `FMovieSceneBoolChannel` — each
+`Channel->GetData()` returns the matching `TMovieSceneChannelData<T>`
+wrapper.
+
+For 3D transform sections specifically, channel-proxy index order is
+`[0-2] Translation X,Y,Z`, `[3-5] Rotation X,Y,Z` (where X=Roll, Y=Pitch,
+Z=Yaw), `[6-8] Scale X,Y,Z`. All nine channels need the same
+set-or-replace treatment when re-keying a transform — there's no
+top-level helper that does all nine at once.
+
+### 5.17 Sequencer: save the sequence package before MRQ re-reads it
+
+Movie Render Queue's PIE executor re-loads the level sequence package
+from disk when it spawns PIE. In-memory edits to the `MovieScene`
+(playback range changes, transform keys, camera bindings, sub-sequences,
+etc.) that haven't been flushed to disk via `UPackage::SavePackage` are
+lost — the render uses the stale on-disk version even though
+`LoadObject<ULevelSequence>(SeqPath)` returns the in-memory copy. The
+result is a successful-looking render that doesn't reflect the most
+recent edits.
+
+This is a sequence-asset specialisation of the general "save before
+reading from disk" rule (see §2.4) — MRQ counts as a from-disk reader
+because the PIE world it spawns reloads the sequence asset fresh. Save
+the sequence's outermost package before kicking the render:
+
+```cpp
+UPackage* SeqPkg = Seq->GetOutermost();
+if (SeqPkg && SeqPkg->IsDirty())
+{
+    const FString Filename = FPackageName::LongPackageNameToFilename(
+        SeqPkg->GetName(), FPackageName::GetAssetPackageExtension());
+    FSavePackageArgs Args;
+    Args.TopLevelFlags = RF_Public | RF_Standalone;
+    Args.SaveFlags = SAVE_NoError;
+    UPackage::SavePackage(SeqPkg, Seq, *Filename, Args);
+}
+```
+
+Same hazard applies to any authoring → MRQ chain where the on-disk state
+diverges from the in-memory state — camera cuts, sub-sequence bindings,
+shot tracks, etc. Saving the level alone (`FEditorFileUtils::SaveCurrentLevel`)
+does not cover this; `/Game/...` sequence assets live in their own
+packages.
 
 ---
 
@@ -791,5 +950,6 @@ For server-specific tool catalogues, query the server with `tools/list`.
 
 | Version | Date | Notes |
 |---|---|---|
+| 3.1.0 | 2026-05-26 | Adds §2.7 (enum-string resolution — three accepted forms), §5.15 (Sequencer playback-range vs section-range divergence), §5.16 (MovieScene channel keys at same time stack instead of replacing), §5.17 (sequence package save before MRQ re-loads it). All four trace back to multi-hour debugging sessions on the showcase render pipeline. |
 | 3.0.0 | 2026-05-21 | Server-agnostic rewrite. No plugin dependency; works against any MCP server exposing UE5. Engine-level wisdom only. |
 | 2.x | 2026-05-19 and earlier | Tied to a specific MCP plugin; deprecated. |
