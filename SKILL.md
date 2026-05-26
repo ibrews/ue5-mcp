@@ -12,7 +12,7 @@ description: >
   trace back to an actual editor crash or hours-long faceplant. Ignoring it
   when UE5 MCP tools are present will lead to wasted time hitting known dead
   ends.
-version: 3.1.0
+version: 3.1.1
 date: 2026-05-26
 license: MIT
 ---
@@ -198,6 +198,39 @@ The same pattern applies on the agent side: when calling an MCP tool
 that takes an enum-named string, prefer the C++ short form
 (`AEM_Manual`) — it's accepted by every resolver that follows even
 minimal best practice; the Python-binding uppercase form may not be.
+
+**When resolution misses, list the valid values in the error.** Returning
+`"unsupported type or value coercion failed"` and nothing else forces the
+caller to grep engine source for the enum's entries. The same
+`NumEnums()` / `GetNameStringByIndex()` iteration that backs the
+case-insensitive fallback also gives you the discovery surface — trim
+each entry to its short name (after the last `::`), skip the
+auto-generated `_MAX` terminator, and join the rest into the error
+string:
+
+```cpp
+TArray<FString> ValidNames;
+const int32 N = Enum->NumEnums();
+for (int32 i = 0; i < N; ++i)
+{
+    FString EntryName = Enum->GetNameStringByIndex(i);
+    int32 ColonPos = INDEX_NONE;
+    if (EntryName.FindLastChar(TEXT(':'), ColonPos))
+        EntryName = EntryName.RightChop(ColonPos + 1);
+    if (EntryName.EndsWith(TEXT("_MAX")))
+        continue;
+    ValidNames.Add(EntryName);
+}
+// "Could not apply 'X' (enum EAutoExposureMethod). Valid values:
+//  AEM_Histogram, AEM_Basic, AEM_Manual. (Case-insensitive; C++ short
+//  name, not Python display name.)"
+```
+
+The error message becomes self-documenting: any agent that calls the
+tool with an invalid string immediately sees the valid set in the
+response. No round-trip through engine source. This pairs naturally
+with the resolver above — same iteration, same `_MAX` filter, used for
+discovery instead of resolution.
 
 ---
 
@@ -950,6 +983,7 @@ For server-specific tool catalogues, query the server with `tools/list`.
 
 | Version | Date | Notes |
 |---|---|---|
+| 3.1.1 | 2026-05-26 | Extends §2.7 with the paired discovery path: when enum-string resolution misses, list the valid short names in the error message using the same `NumEnums()` / `GetNameStringByIndex()` iteration (trim to short-name, skip `_MAX`). Self-documenting error replaces the opaque "unsupported coercion failed" failure mode. |
 | 3.1.0 | 2026-05-26 | Adds §2.7 (enum-string resolution — three accepted forms), §5.15 (Sequencer playback-range vs section-range divergence), §5.16 (MovieScene channel keys at same time stack instead of replacing), §5.17 (sequence package save before MRQ re-loads it). All four trace back to multi-hour debugging sessions on the showcase render pipeline. |
 | 3.0.0 | 2026-05-21 | Server-agnostic rewrite. No plugin dependency; works against any MCP server exposing UE5. Engine-level wisdom only. |
 | 2.x | 2026-05-19 and earlier | Tied to a specific MCP plugin; deprecated. |
