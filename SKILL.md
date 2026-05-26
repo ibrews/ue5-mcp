@@ -12,7 +12,7 @@ description: >
   trace back to an actual editor crash or hours-long faceplant. Ignoring it
   when UE5 MCP tools are present will lead to wasted time hitting known dead
   ends.
-version: 3.1.1
+version: 3.1.2
 date: 2026-05-26
 license: MIT
 ---
@@ -231,6 +231,58 @@ tool with an invalid string immediately sees the valid set in the
 response. No round-trip through engine source. This pairs naturally
 with the resolver above — same iteration, same `_MAX` filter, used for
 discovery instead of resolution.
+
+### 2.8 Actor "properties" may live on the RootComponent, not the AActor
+
+A reflection-driven property setter that only walks `Actor->GetClass()`
+silently misses the properties that look actor-level in the editor but
+are actually stored on the RootComponent (a SceneComponent). The
+member-of-component set includes `Mobility`, `bHidden`, `bVisible`,
+`RelativeLocation`, `RelativeRotation`, `RelativeScale3D`, `AreaClass`,
+and the other SceneComponent transform/visibility fields.
+
+The failure mode is hostile: the setter returns success-shaped (the
+property *name* is real, and the JSON value coerced cleanly), the call
+log shows `"property_name": "Mobility", "applied": true`, but a
+follow-up read returns the old value. There's no error, no
+deprecation warning, no typo suggestion — just a write that went into
+the void because the writer aimed at the wrong UObject.
+
+**Fix:** when the property isn't found on `Actor->GetClass()` and the
+caller didn't pin a specific component, fall back to the RootComponent's
+class:
+
+```cpp
+UClass* TargetClass = Actor->GetClass();
+void*   TargetPtr   = Actor;
+
+FProperty* Prop = TargetClass->FindPropertyByName(*PropertyName);
+if (!Prop && Actor->GetRootComponent())
+{
+    USceneComponent* Root = Actor->GetRootComponent();
+    if (FProperty* RootProp = Root->GetClass()->FindPropertyByName(*PropertyName))
+    {
+        Prop        = RootProp;
+        TargetClass = Root->GetClass();
+        TargetPtr   = Root;
+    }
+}
+```
+
+**Surface which container actually received the write in the response**
+(`target_object: "Actor" | "<ComponentName>"`). Without that hint, a
+caller debugging "why didn't the mobility change?" has no clue whether
+the fallback fired or whether the original Actor-level write succeeded
+on a same-named property. The silent-magic failure mode is worse than
+the original wart — the call now appears to work but you can't tell
+where the change landed.
+
+The same pattern applies to other SceneComponent-resident sets — light
+intensity / color on light components, mesh on StaticMeshComponent, etc.
+Those usually have explicit component-targeting parameters in MCP
+surfaces, so the silent-miss mode there is rarer, but the fallback is
+the right default for any property setter accepting an actor name
+without an explicit component scope.
 
 ---
 
@@ -983,6 +1035,7 @@ For server-specific tool catalogues, query the server with `tools/list`.
 
 | Version | Date | Notes |
 |---|---|---|
+| 3.1.2 | 2026-05-26 | Adds §2.8 (Actor "properties" may live on the RootComponent, not the AActor). Reflection-driven property setters that only walk `Actor->GetClass()` silently miss `Mobility` / `bHidden` / `bVisible` / `Relative*` and other SceneComponent-resident fields. Documents the fallback pattern + the response-shape requirement (surface `target_object` so the write isn't silent magic). |
 | 3.1.1 | 2026-05-26 | Extends §2.7 with the paired discovery path: when enum-string resolution misses, list the valid short names in the error message using the same `NumEnums()` / `GetNameStringByIndex()` iteration (trim to short-name, skip `_MAX`). Self-documenting error replaces the opaque "unsupported coercion failed" failure mode. |
 | 3.1.0 | 2026-05-26 | Adds §2.7 (enum-string resolution — three accepted forms), §5.15 (Sequencer playback-range vs section-range divergence), §5.16 (MovieScene channel keys at same time stack instead of replacing), §5.17 (sequence package save before MRQ re-loads it). All four trace back to multi-hour debugging sessions on the showcase render pipeline. |
 | 3.0.0 | 2026-05-21 | Server-agnostic rewrite. No plugin dependency; works against any MCP server exposing UE5. Engine-level wisdom only. |
