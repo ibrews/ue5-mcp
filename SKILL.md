@@ -12,7 +12,7 @@ description: >
   trace back to an actual editor crash or hours-long faceplant. Ignoring it
   when UE5 MCP tools are present will lead to wasted time hitting known dead
   ends.
-version: 3.1.2
+version: 3.2.0
 date: 2026-05-26
 license: MIT
 ---
@@ -1017,6 +1017,19 @@ Runtime crash. Use audio buffer sources (Oscillators, Noise) into Audio
 pins. Scalar math (Multiply, Add) on the audio path goes through Audio
 variants of those nodes, not the float variants.
 
+### 12.9 Don't destructively rewrite committed config to toggle sim vs device
+
+A script that flips `.ini` settings in place to switch a UE5 visionOS/AVP project between the
+Simulator and a real device makes the repo stateful — easy to cook the wrong target, dirties
+tracked files, and invalidates caches for a bigger recompile than necessary. Carry the delta in
+the **build command** instead: build arch (`-clientarchitecture=iossimulator` for sim, arm64 for
+device), code-signing team, install method (`simctl` vs `devicectl`), and a METAL_SIM shader cook
+flag (`-ini:...:bEnableSimulatorSupport=True`, sim only) as `-ini:` overrides passed to
+`BuildCookRun`. The committed render config never changes. Reference implementation
+(`ue-avp-build.sh sim|device`) + full rationale: AgileLens internal KB,
+`intelligence/techniques/ue-visionos-sim-device-build-flow.md` (ask the user for a copy if you
+don't have KB access).
+
 ---
 
 ## 13. Reading list
@@ -1035,6 +1048,7 @@ For server-specific tool catalogues, query the server with `tools/list`.
 
 | Version | Date | Notes |
 |---|---|---|
+| 3.2.0 | 2026-07-03 | Adds §12.9 (don't destructively rewrite committed config to toggle sim vs device — carry the delta in the build command instead). |
 | 3.1.2 | 2026-05-26 | Adds §2.8 (Actor "properties" may live on the RootComponent, not the AActor). Reflection-driven property setters that only walk `Actor->GetClass()` silently miss `Mobility` / `bHidden` / `bVisible` / `Relative*` and other SceneComponent-resident fields. Documents the fallback pattern + the response-shape requirement (surface `target_object` so the write isn't silent magic). |
 | 3.1.1 | 2026-05-26 | Extends §2.7 with the paired discovery path: when enum-string resolution misses, list the valid short names in the error message using the same `NumEnums()` / `GetNameStringByIndex()` iteration (trim to short-name, skip `_MAX`). Self-documenting error replaces the opaque "unsupported coercion failed" failure mode. |
 | 3.1.0 | 2026-05-26 | Adds §2.7 (enum-string resolution — three accepted forms), §5.15 (Sequencer playback-range vs section-range divergence), §5.16 (MovieScene channel keys at same time stack instead of replacing), §5.17 (sequence package save before MRQ re-loads it). All four trace back to multi-hour debugging sessions on the showcase render pipeline. |
