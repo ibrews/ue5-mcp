@@ -12,8 +12,8 @@ description: >
   trace back to an actual editor crash or hours-long faceplant. Ignoring it
   when UE5 MCP tools are present will lead to wasted time hitting known dead
   ends.
-version: 3.1.0
-date: 2026-05-21
+version: 3.3.0
+date: 2026-08-08
 license: MIT
 ---
 
@@ -150,6 +150,194 @@ an inconsistent state — the node exists but the editor's pin-resolution +
 compile pipeline doesn't see it. Symptoms: phantom "missing node" errors at
 compile, broken connect operations, or nodes that vanish after editor
 reload.
+
+### 2.7 Enum-string resolution has three accepted forms
+
+UENUM-defined enums store their entries as fully-qualified FName forms
+like `EAutoExposureMethod::AEM_Manual`. `UEnum::GetValueByNameString`
+matches the fully-qualified form, but bare short names (`AEM_Manual`) and
+the Python-binding casing the `unreal` module exposes (`AEM_MANUAL` from
+`unreal.EAutoExposureMethod.AEM_MANUAL`) silently miss — those are the
+forms agents most naturally reach for, especially when copying values
+out of `dump_post_process_settings` output or Python docs.
+
+A 3-step resolver covers the common cases:
+
+```cpp
+int64 ResolveEnumValue(UEnum* Enum, const FString& Name)
+{
+    if (!Enum) return INDEX_NONE;
+    int64 Val = Enum->GetValueByNameString(Name);            // EEnumType::ShortName
+    if (Val != INDEX_NONE) return Val;
+    Val = Enum->GetValueByName(FName(*Name));                // FName lookup
+    if (Val != INDEX_NONE) return Val;
+    const int32 N = Enum->NumEnums();                        // case-insensitive
+    for (int32 i = 0; i < N; ++i)                            // suffix-after-::
+    {
+        FString EntryName = Enum->GetNameStringByIndex(i);
+        int32 ColonPos = INDEX_NONE;
+        if (EntryName.FindLastChar(TEXT(':'), ColonPos))
+            EntryName = EntryName.RightChop(ColonPos + 1);
+        if (EntryName.Equals(Name, ESearchCase::IgnoreCase))
+            return Enum->GetValueByIndex(i);
+    }
+    return INDEX_NONE;
+}
+```
+
+Affects every reflection-driven property setter that accepts enum-typed
+JSON strings (`FEnumProperty`, `FByteProperty` whose `Enum` field is
+populated, properties resolved via `StaticEnum<...>()`). The 1-step form
+`Enum->GetValueByNameString(Name, EGetByNameFlags::CaseSensitive)` is
+the most fragile — it rejects everything except the fully-qualified
+form. The fallback chain trades a tiny scan cost (enums rarely have more
+than a few dozen entries) for actually accepting the strings callers
+pass in.
+
+The same pattern applies on the agent side: when calling an MCP tool
+that takes an enum-named string, prefer the C++ short form
+(`AEM_Manual`) — it's accepted by every resolver that follows even
+minimal best practice; the Python-binding uppercase form may not be.
+
+**When resolution misses, list the valid values in the error.** Returning
+`"unsupported type or value coercion failed"` and nothing else forces the
+caller to grep engine source for the enum's entries. The same
+`NumEnums()` / `GetNameStringByIndex()` iteration that backs the
+case-insensitive fallback also gives you the discovery surface — trim
+each entry to its short name (after the last `::`), skip the
+auto-generated `_MAX` terminator, and join the rest into the error
+string:
+
+```cpp
+TArray<FString> ValidNames;
+const int32 N = Enum->NumEnums();
+for (int32 i = 0; i < N; ++i)
+{
+    FString EntryName = Enum->GetNameStringByIndex(i);
+    int32 ColonPos = INDEX_NONE;
+    if (EntryName.FindLastChar(TEXT(':'), ColonPos))
+        EntryName = EntryName.RightChop(ColonPos + 1);
+    if (EntryName.EndsWith(TEXT("_MAX")))
+        continue;
+    ValidNames.Add(EntryName);
+}
+// "Could not apply 'X' (enum EAutoExposureMethod). Valid values:
+//  AEM_Histogram, AEM_Basic, AEM_Manual. (Case-insensitive; C++ short
+//  name, not Python display name.)"
+```
+
+The error message becomes self-documenting: any agent that calls the
+tool with an invalid string immediately sees the valid set in the
+response. No round-trip through engine source. This pairs naturally
+with the resolver above — same iteration, same `_MAX` filter, used for
+discovery instead of resolution.
+
+### 2.8 Actor "properties" may live on the RootComponent, not the AActor
+
+A reflection-driven property setter that only walks `Actor->GetClass()`
+silently misses the properties that look actor-level in the editor but
+are actually stored on the RootComponent (a SceneComponent). The
+member-of-component set includes `Mobility`, `bHidden`, `bVisible`,
+`RelativeLocation`, `RelativeRotation`, `RelativeScale3D`, `AreaClass`,
+and the other SceneComponent transform/visibility fields.
+
+The failure mode is hostile: the setter returns success-shaped (the
+property *name* is real, and the JSON value coerced cleanly), the call
+log shows `"property_name": "Mobility", "applied": true`, but a
+follow-up read returns the old value. There's no error, no
+deprecation warning, no typo suggestion — just a write that went into
+the void because the writer aimed at the wrong UObject.
+
+**Fix:** when the property isn't found on `Actor->GetClass()` and the
+caller didn't pin a specific component, fall back to the RootComponent's
+class:
+
+```cpp
+UClass* TargetClass = Actor->GetClass();
+void*   TargetPtr   = Actor;
+
+FProperty* Prop = TargetClass->FindPropertyByName(*PropertyName);
+if (!Prop && Actor->GetRootComponent())
+{
+    USceneComponent* Root = Actor->GetRootComponent();
+    if (FProperty* RootProp = Root->GetClass()->FindPropertyByName(*PropertyName))
+    {
+        Prop        = RootProp;
+        TargetClass = Root->GetClass();
+        TargetPtr   = Root;
+    }
+}
+```
+
+**Surface which container actually received the write in the response**
+(`target_object: "Actor" | "<ComponentName>"`). Without that hint, a
+caller debugging "why didn't the mobility change?" has no clue whether
+the fallback fired or whether the original Actor-level write succeeded
+on a same-named property. The silent-magic failure mode is worse than
+the original wart — the call now appears to work but you can't tell
+where the change landed.
+
+The same pattern applies to other SceneComponent-resident sets — light
+intensity / color on light components, mesh on StaticMeshComponent, etc.
+Those usually have explicit component-targeting parameters in MCP
+surfaces, so the silent-miss mode there is rarer, but the fallback is
+the right default for any property setter accepting an actor name
+without an explicit component scope.
+
+### 2.9 A mutation without `Modify()` isn't "undoable but with one field missing" — it's not in the undo history at all
+
+`FScopedTransaction` wraps a block of editor code as one undo step, but the
+transaction only actually *contains* an object if that object's `Modify()`
+was called before it changed. An empty transaction — every object in scope
+mutated via a raw setter or direct `FProperty` write that skipped `Modify()`
+— is discarded as transient rather than pushed onto the undo stack
+(verified against UE 5.8's `EditorTransaction.cpp`). The failure mode isn't
+"Ctrl+Z reverts everything except this one field" — it's "Ctrl+Z does
+nothing at all for this entire edit," with no error and no indication
+anything was skipped. A human editing the same property through the
+Details panel gets a working undo step for free (the panel's property
+handle calls `Modify()` for you); a tool that reaches past the UI and
+writes the property directly does not, unless it calls `Modify()` itself.
+
+**The rule: call `Modify()` on the object *before* the mutation, not
+after** — it snapshots pre-mutation state, so calling it post-hoc records
+nothing useful.
+
+```cpp
+// Wrong: SetMobility doesn't call Modify() itself, so this mutation
+// never enters the transaction — Ctrl+Z after this silently does nothing.
+RootComponent->SetMobility(EComponentMobility::Movable);
+
+// Right:
+RootComponent->Modify();
+RootComponent->SetMobility(EComponentMobility::Movable);
+```
+
+For a transform-style write that touches both the actor and its root
+component, `Modify()` both — matching whichever object's state the engine
+actually reads back on undo:
+
+```cpp
+Actor->Modify();
+Actor->GetRootComponent()->Modify();
+Actor->SetActorTransform(NewTransform);
+```
+
+**Not every mutator needs this.** High-level engine entry points that are
+themselves undo-aware self-record when a transaction is active — `UWorld::
+SpawnActor` and `AActor::Destroy()` both record into `GUndo` automatically
+(verified in engine source), so wrapping a spawn/destroy in an outer
+`FScopedTransaction` needs no extra `Modify()` call. The gap is specifically
+low-level setters (`SetMobility`, `SetIntensity`, a generic reflected
+`FProperty` write via `ImportText_Direct` / `CopyCompleteValue`) that
+mutate state directly without going through an undo-aware wrapper.
+
+**If you're auditing an existing surface for this bug, look for "it built,
+it ran, the response said success" as the tell** — this is not a crash or
+an error-returning bug, so it never shows up in normal QA. The only way to
+catch it is to explicitly test Ctrl+Z (or the transaction system's
+equivalent) after every mutating call and confirm the *specific* property
+you changed actually reverts — not just that undo doesn't crash.
 
 ---
 
@@ -424,6 +612,117 @@ Other UltraDynamicSky notes:
 - Rain/snow particles render most visibly in PIE; editor viewport often
   shows the sky but not the particle layer.
 
+### 5.15 Sequencer: extending the playback range doesn't extend track sections
+
+`UMovieScene::SetPlaybackRange(...)` updates the scene's logical playback
+range, but per-track sections (created by `AddNewCameraCut`, `AddSection`
+on a TransformTrack, FloatTrack, etc.) keep their original lengths. The
+camera cut track section in particular bounds what Movie Render Queue
+actually renders — **MRQ stops at the end of the active camera cut
+section regardless of the playback range**. Symptom: a sequence whose
+`GetPlaybackRange()` reports 12 s renders only the first 5 s; the
+returned image count matches the section length, not the playback range.
+
+After extending the playback range, iterate every track on every binding
+and call `SetRange` on every section:
+
+```cpp
+const TRange<FFrameNumber> NewRange = MovieScene->GetPlaybackRange();
+for (UMovieSceneTrack* Track : MovieScene->GetTracks())                       // master tracks
+    for (UMovieSceneSection* Sec : Track->GetAllSections()) Sec->SetRange(NewRange);
+
+if (UMovieSceneTrack* CutTrack = MovieScene->GetCameraCutTrack())             // camera cut
+    for (UMovieSceneSection* Sec : CutTrack->GetAllSections()) Sec->SetRange(NewRange);
+
+for (const FMovieSceneBinding& B : MovieScene->GetBindings())                 // per-binding tracks
+    for (UMovieSceneTrack* T : B.GetTracks())
+        for (UMovieSceneSection* Sec : T->GetAllSections()) Sec->SetRange(NewRange);
+```
+
+Symmetrically: shrinking the playback range while leaving sections long
+is also a no-op for MRQ (sections still play to their end). If you want
+"playback range and sections always match," apply the same loop on every
+range mutation. Real-world failure mode: a sequence's playback range and
+its camera cut section's range drift over a series of edits and the next
+render silently uses whichever happens to be shorter.
+
+### 5.16 Sequencer: channel keys at the same time stack instead of replacing
+
+`FMovieSceneDoubleChannel::AddLinearKey(FrameNumber, Value)` and the
+equivalent on `FMovieSceneFloatChannel` append a key to the channel's
+time-sorted array even if a key already exists at `FrameNumber`. The
+MovieScene tracks both keys as separate entries; on interpolation, the
+first-found one can shadow the just-added one — silently producing the
+wrong animated value. Re-keying the same time looks like a successful
+no-op.
+
+Detect and update in place via the channel's `TMovieSceneChannelData`
+wrapper:
+
+```cpp
+TMovieSceneChannelData<FMovieSceneDoubleValue> Data = Channel->GetData();
+const int32 ExistingIdx = Data.FindKey(FrameNumber);     // exact-frame match
+if (ExistingIdx != INDEX_NONE)
+{
+    TArrayView<FMovieSceneDoubleValue> Values = Data.GetValues();
+    FMovieSceneDoubleValue Updated = Values[ExistingIdx];
+    Updated.Value = NewValue;                            // preserves tangent / interp
+    Values[ExistingIdx] = Updated;
+}
+else
+{
+    Channel->AddLinearKey(FrameNumber, NewValue);
+}
+```
+
+`FindKey` has an optional `InTolerance` parameter (`FFrameNumber(0)` by
+default) for inexact matches. The same pattern applies to
+`FMovieSceneFloatChannel` / `FMovieSceneFloatValue`,
+`FMovieSceneIntegerChannel`, and `FMovieSceneBoolChannel` — each
+`Channel->GetData()` returns the matching `TMovieSceneChannelData<T>`
+wrapper.
+
+For 3D transform sections specifically, channel-proxy index order is
+`[0-2] Translation X,Y,Z`, `[3-5] Rotation X,Y,Z` (where X=Roll, Y=Pitch,
+Z=Yaw), `[6-8] Scale X,Y,Z`. All nine channels need the same
+set-or-replace treatment when re-keying a transform — there's no
+top-level helper that does all nine at once.
+
+### 5.17 Sequencer: save the sequence package before MRQ re-reads it
+
+Movie Render Queue's PIE executor re-loads the level sequence package
+from disk when it spawns PIE. In-memory edits to the `MovieScene`
+(playback range changes, transform keys, camera bindings, sub-sequences,
+etc.) that haven't been flushed to disk via `UPackage::SavePackage` are
+lost — the render uses the stale on-disk version even though
+`LoadObject<ULevelSequence>(SeqPath)` returns the in-memory copy. The
+result is a successful-looking render that doesn't reflect the most
+recent edits.
+
+This is a sequence-asset specialisation of the general "save before
+reading from disk" rule (see §2.4) — MRQ counts as a from-disk reader
+because the PIE world it spawns reloads the sequence asset fresh. Save
+the sequence's outermost package before kicking the render:
+
+```cpp
+UPackage* SeqPkg = Seq->GetOutermost();
+if (SeqPkg && SeqPkg->IsDirty())
+{
+    const FString Filename = FPackageName::LongPackageNameToFilename(
+        SeqPkg->GetName(), FPackageName::GetAssetPackageExtension());
+    FSavePackageArgs Args;
+    Args.TopLevelFlags = RF_Public | RF_Standalone;
+    Args.SaveFlags = SAVE_NoError;
+    UPackage::SavePackage(SeqPkg, Seq, *Filename, Args);
+}
+```
+
+Same hazard applies to any authoring → MRQ chain where the on-disk state
+diverges from the in-memory state — camera cuts, sub-sequence bindings,
+shot tracks, etc. Saving the level alone (`FEditorFileUtils::SaveCurrentLevel`)
+does not cover this; `/Game/...` sequence assets live in their own
+packages.
+
 ---
 
 ## 6. MCP transport requirements
@@ -593,6 +892,110 @@ Functions, Sound Cues with self-referential branches). Always cap
 recursion depth (1024 is a safe default for graph walks). Always cap
 output size before returning. Always opportunistically GC any per-tool
 caches.
+
+### 8.8 `.uplugin`'s `"Optional": true` describes a build-time relationship, not a runtime one — and doesn't survive contact with a data symbol
+
+If your MCP-server plugin wraps a big optional engine subsystem (Niagara,
+GameplayAbilities, MetaHuman, Mutable/CustomizableObject, MovieRenderPipeline)
+so it builds clean whether or not that subsystem is enabled, the standard
+recipe is: reference it in `.uplugin` with `"Optional": true`, gate the
+`Build.cs` dependency behind a plugin-presence check, and `#if`-guard the
+code that uses it. That recipe closes the build-time gap. It does **not**
+by itself close the runtime gap.
+
+**The trap:** if the optional plugin *was* present when you built, your
+binary now hard-links against it — `"Optional": true` only told UBT "don't
+fail the build if this is absent," it did not make the resulting `.dll`'s
+imports soft. Drop that binary into a project where the optional plugin is
+disabled and the OS loader fails to resolve those imports at mount time
+(`GetLastError=126` on Windows), with no useful diagnostic pointing at
+which optional dependency is the culprit.
+
+The standard fix is `/DELAYLOAD` (MSVC) — defer resolving the DLL's
+imports until first actual use, so a build that never calls into the
+optional module never needs to load it. This works cleanly for **function
+calls**. It does **not** work for direct references to an **exported data
+symbol** — a global `UClass*`, a `static const FName`, an `extern` in the
+optional module's headers — because `/DELAYLOAD` indirects function calls
+through a thunk it generates, but a data-symbol reference compiles to a
+direct memory address that has to be resolved at link time; there's no
+thunk mechanism for it. If your `#if`-guarded code touches one of those
+instead of exclusively calling functions, the linker fails outright
+(MSVC LNK1194-class error) even with delay-loading correctly configured —
+and the fix isn't "configure delay-loading harder," it's "don't reference
+the data symbol at all outside the guard, or wrap access to it behind a
+function the optional module itself exports."
+
+**Practical rule:** before assuming `"Optional": true` + delay-load has
+made a dependency fully soft, audit every symbol your `#if`-guarded code
+touches from the optional module and confirm none of them are exported
+globals/statics — function-only access is the only shape `/DELAYLOAD`
+actually covers. And test runtime disable, not just build success —
+"builds clean without the plugin present" and "loads clean in a project
+where the plugin is present-but-disabled" are two different claims, and
+only the second one is what an end user actually hits.
+
+### 8.9 macOS: a too-minimal test project can hard-crash a `LoadingPhase: Default` editor plugin on `!AreShaderTypesInitialized()`
+
+A freshly-built editor plugin, dropped into a deliberately minimal test
+project (a handful of actors, few other plugins enabled) and launched, can
+crash before the UI ever appears:
+
+```
+Assertion failed: !AreShaderTypesInitialized() [File:.../RenderCore/Private/Shader.cpp]
+Shader type was loaded too late, use ELoadingPhase::PostConfigInit on your
+module to cause it to load earlier. This shader will not be compiled or function.
+```
+
+Stack: a shader type's static registration, triggered by `dlopen()` inside
+`FModuleManager::InternalLoadLibrary` as your plugin's module loads. **The
+specific shader type that faults is not stable across runs** — different
+launches of the identical binary can fault on different shader classes
+from different engine modules. That instability is the tell: this is a
+**load-order race**, not a bad dependency in your plugin.
+
+**The mechanism:** `AreShaderTypesInitialized()` locks at some point during
+normal engine startup — any *new* shader-type static registration after
+that point is fatal. Renderer/RenderCore dylibs are core engine modules
+that are supposed to already be loaded by then. But macOS dylib loading is
+lazy — dyld resolves and initializes a library on its first real touch,
+not eagerly at process start. In a minimal project with little else
+forcing those dylibs open early, a plugin module loading at `Default`
+phase can be the *first* thing that ever triggers `dlopen()` on one of
+them — and whichever shader-owning dylib that happens to pull in registers
+its shader types right then, after the lock, and asserts. Which dylib it
+is (hence which shader type faults) depends on link order and symbol
+resolution timing.
+
+**What does NOT fix it** (both testable via `.uplugin`-only edits — no
+rebuild needed, `LoadingPhase` is read from the manifest at mount time):
+- `LoadingPhase: "PostConfigInit"` (the phase the assert message itself
+  recommends) moves the crash **earlier** instead of fixing it if your
+  module's `StartupModule()` touches the UObject/package system — at
+  `PostConfigInit` that system isn't up yet, and you get a *different*
+  fatal error (`Object is not packaged`) instead.
+- `LoadingPhase: "PreDefault"` (one phase earlier than `Default`) lands
+  back in the identical shader-type race. If a safe window exists between
+  "UObject system ready" and "shader types locked," it isn't reachable
+  through a simple `ELoadingPhase` value.
+
+**What did fix it:** use a normal-structured test project instead of the
+leanest possible one — real content, several other plugins already
+enabled. That's enough to force the Renderer/RenderCore dylibs open
+through the engine's own normal startup path before your plugin's
+`Default`-phase module load ever gets a turn, so the race never triggers.
+Counterintuitively, the "more realistic" project is the *safer* smoke test
+here, not the minimal one — don't use a deliberately empty project to
+smoke-test a macOS editor plugin; the minimalism itself is what exposes
+this class of crash.
+
+**Related gotcha hit while chasing this:** a command-line `-ini:` override
+targeting a `UDeveloperSettings` class with `config=EditorPerProjectUserSettings`
+can be silently ignored — the editor boots fine and the override simply
+doesn't apply, with no error. If a runtime setting you overrode via `-ini:`
+doesn't seem to have taken effect, verify the *actual* value from a log
+line or a live read-back before concluding the editor failed to start —
+it may have started completely normally on the un-overridden default.
 
 ---
 
@@ -804,6 +1207,10 @@ For server-specific tool catalogues, query the server with `tools/list`.
 
 | Version | Date | Notes |
 |---|---|---|
-| 3.1.0 | 2026-07-03 | Adds §12.9 (don't destructively rewrite committed config to toggle sim vs device — carry the delta in the build command instead). |
+| 3.3.0 | 2026-08-08 | Adds §2.9 (a mutation without `Modify()` isn't partially undoable, it's not in the undo history at all — the transaction is discarded as transient), §8.8 (`.uplugin`'s `"Optional": true` is a build-time relationship only; delay-loading can't cover exported data-symbol references, only function calls — MSVC LNK1194-class failures survive correctly-configured delay-load if the guarded code touches a data symbol), and §8.9 (macOS: a too-minimal test project can hard-crash a `LoadingPhase: Default` plugin on `!AreShaderTypesInitialized()` — a dyld lazy-loading race, not a plugin bug; fix is a more realistic test project, not a different `LoadingPhase`). All three are general engine/toolchain knowledge distilled from a real plugin's transaction-safety audit, optional-dependency linking, and macOS load-order debugging — not specific to any one MCP server. |
+| 3.2.0 | 2026-07-03 | Adds §12.9 (don't destructively rewrite committed config to toggle sim vs device — carry the delta in the build command instead). |
+| 3.1.2 | 2026-05-26 | Adds §2.8 (Actor "properties" may live on the RootComponent, not the AActor). Reflection-driven property setters that only walk `Actor->GetClass()` silently miss `Mobility` / `bHidden` / `bVisible` / `Relative*` and other SceneComponent-resident fields. Documents the fallback pattern + the response-shape requirement (surface `target_object` so the write isn't silent magic). |
+| 3.1.1 | 2026-05-26 | Extends §2.7 with the paired discovery path: when enum-string resolution misses, list the valid short names in the error message using the same `NumEnums()` / `GetNameStringByIndex()` iteration (trim to short-name, skip `_MAX`). Self-documenting error replaces the opaque "unsupported coercion failed" failure mode. |
+| 3.1.0 | 2026-05-26 | Adds §2.7 (enum-string resolution — three accepted forms), §5.15 (Sequencer playback-range vs section-range divergence), §5.16 (MovieScene channel keys at same time stack instead of replacing), §5.17 (sequence package save before MRQ re-loads it). All four trace back to multi-hour debugging sessions on the showcase render pipeline. |
 | 3.0.0 | 2026-05-21 | Server-agnostic rewrite. No plugin dependency; works against any MCP server exposing UE5. Engine-level wisdom only. |
 | 2.x | 2026-05-19 and earlier | Tied to a specific MCP plugin; deprecated. |
