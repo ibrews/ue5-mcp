@@ -1,12 +1,6 @@
 # ue5-mcp
 
-A field manual for AI agents driving Unreal Engine 5 through MCP.
-
-When an AI agent connects to the UE5 editor through an MCP server, it gains access to tools for manipulating Blueprints, materials, Niagara particles, MetaSound audio, meshes, widgets, levels — anything UE's reflection surface exposes. The tools are powerful but UE is full of undocumented quirks: APIs that silently no-op, crash patterns that only surface at runtime, render paths that compile cleanly but produce nothing visible, async operations that don't block, and reflection rules that bite anyone who treats the engine like a typical scripting target.
-
-This skill gives your AI that knowledge upfront so it doesn't have to rediscover it every session.
-
-**The skill is server-agnostic.** It works with any MCP server that exposes UE5 functionality — including Epic's official `ModelContextProtocol` plugin (experimental, ships with UE 5.8), and any third-party / custom server. It documents *engine-level* behaviour, not server-level features. Server-specific tool names and shapes vary; use `tools/list` against your own server to discover what's actually available.
+ue5-mcp is a field manual for AI agents driving Unreal Engine 5 through the Model Context Protocol. It documents engine-level failure modes and proven workflows for Blueprints, materials, Niagara, MetaSound, meshes, widgets, levels, transport, and asset verification. The guidance is server-agnostic, so agents can apply it with Epic's official `ModelContextProtocol` plugin or any compatible third-party server.
 
 ## What's inside
 
@@ -19,7 +13,7 @@ This skill gives your AI that knowledge upfront so it doesn't have to rediscover
 - **UE 5.7 vs 5.8 differences** — engine-level deltas that affect any agent
 - **Asset structure quick reference** — what fields appear in Blueprint, Niagara, Material, Level, Sequencer, and Widget Blueprint dumps
 
-## Installation
+## Quickstart
 
 ### Claude Code
 
@@ -67,7 +61,7 @@ The skill is a single `SKILL.md` file. When loaded, it gives your AI agent conte
 
 The knowledge is organised by topic (reflection rules, stability hazards, subsystems, transport, patterns) so the agent can quickly find relevant guidance for whatever it's working on.
 
-## Things to try
+## Things to Try
 
 1. **Ask your agent to create a new Blueprint Actor** — with an MCP server connected, the Blueprint appears in the Content Browser within seconds; no manual editor clicking required. Then ask it to verify the asset exists by reading it back.
 2. **Ask your agent to create a Niagara particle system** — the skill steers it away from "create from empty" (which compiles but doesn't emit) and toward duplicating a working template. You should see particles in PIE.
@@ -91,6 +85,8 @@ PRs that add server-specific tool catalogues, recipes tied to a single MCP serve
 ## Origin
 
 Built during real UE5 development sessions using AI agents driving the editor. Every entry traces back to an actual failure, runtime crash, or hours-long debugging session.
+
+Maintained by [Alex Coulombe Presents](https://github.com/ibrews).
 
 ## License
 
