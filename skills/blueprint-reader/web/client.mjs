@@ -2,6 +2,7 @@
 // accepted worker while a new one parses so failures/timeouts preserve the session.
 export class BrowserClient {
   browser = true;
+  automaticLinks = true;
   worker = null;
   createWorker() { return new Worker(new URL('./worker.js', import.meta.url), { type: 'module' }); }
   request(worker, action, body) {

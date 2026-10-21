@@ -10,7 +10,7 @@ Use the bundled parser before reasoning about a large export. It reuses UEBluepr
 
 For first-time installation, client prompts, upgrades and troubleshooting, see [Getting started](README.md).
 
-For a user who wants no installation, use the [browser edition](https://ibrews.github.io/ue5-mcp/). It parses raw text/files and saved sessions locally in a worker. Its BlueprintUE link mode opens the source and guides copying text; do not claim automatic browser URL imports. This installed skill and the Node local page still fetch URLs directly. See [browser architecture and deployment](references/browser-edition.md).
+For a user who wants no installation, use the [browser edition](https://ibrews.github.io/ue5-mcp/). It parses raw text/files and saved sessions locally in a worker. Its BlueprintUE link mode fetches exports automatically through our hosted helper; parsing stays local. Pasted text/files never go to the helper. Link URLs and fetched exports pass through Vercel; use paste/files for sensitive material. This installed skill and the Node local page fetch URLs directly. See [browser architecture and deployment](references/browser-edition.md).
 
 ## Run
 

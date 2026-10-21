@@ -1,6 +1,6 @@
 import { parseTextWithDigest, mergeBundles } from '../scripts/parser-core.mjs';
 import { sessionDocument } from '../scripts/session-core.mjs';
-import { blueprintURL } from '../scripts/source-core.mjs';
+import { fetchLinkedBlueprint } from './fetch-link.mjs';
 import { byteLength, utf8 } from '../scripts/text.mjs';
 import { analyze, compactBrief } from '../scripts/analysis.mjs';
 import { selectGraphs, sliceEntry, selectNode, nodeReport } from '../scripts/report.mjs';
@@ -8,14 +8,13 @@ import { flow } from '../scripts/flow.mjs';
 
 export class BrowserReader {
   current = null;
+  constructor(loadLink = fetchLinkedBlueprint) { this.loadLink = loadLink; }
   async ingest(body) {
     const budget = body.budget ?? 8000;
     if (!Number.isInteger(budget) || budget < 2000 || budget > 64000) throw new Error('Invalid brief budget.');
     let sources = [];
     if (body.url) {
-      const url = blueprintURL(body.url).href;
-      if (!body.text?.trim()) throw new Error('Open the BlueprintUE link, use Copy on that page, then paste its Blueprint text below. BlueprintUE does not permit direct browser imports.');
-      sources.push({ text: body.text, source: { kind: 'blueprintue', name: 'Copied BlueprintUE export', url } });
+      sources.push(await this.loadLink(body.url));
     } else if (body.text?.trim()) sources.push({ text: body.text, source: { kind: 'paste', name: 'Pasted Blueprint' } });
     if (body.files != null && !Array.isArray(body.files)) throw new Error('Invalid file input.');
     if ((body.files?.length || 0) > 100) throw new Error('At most 100 files per session.');

@@ -5,7 +5,7 @@ const bytes = n => new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }
 function status(text, error = false) { $('status').textContent = text; $('status').classList.toggle('error', error); }
 function setMode(value) {
   mode = value;
-  $('paste-input').hidden = value !== 'paste' && !api.browser; $('link-input').hidden = value !== 'link';
+  $('paste-input').hidden = value !== 'paste' && (!api.browser || api.automaticLinks); $('link-input').hidden = value !== 'link';
   $('paste-mode').setAttribute('aria-pressed', value === 'paste'); $('link-mode').setAttribute('aria-pressed', value === 'link');
 }
 $('paste-mode').addEventListener('click', () => setMode('paste'));
@@ -90,7 +90,7 @@ $('ingest-form').addEventListener('submit', async event => {
       const text = new TextDecoder(encoding, { fatal: true }).decode(raw);
       if (file.name.endsWith('.json')) files.push({ session: JSON.parse(text) }); else files.push({ name: file.name, text });
     }
-    const body = { budget: Number($('budget').value), files, text: mode === 'paste' || api.browser ? $('source-text').value : '', url: mode === 'link' ? $('source-url').value.trim() : '' };
+    const body = { budget: Number($('budget').value), files, text: mode === 'paste' || (api.browser && !api.automaticLinks) ? $('source-text').value : '', url: mode === 'link' ? $('source-url').value.trim() : '' };
     const data = await api.ingest(body);
     render(data); status('Ready. Save the session for follow-up questions; copy only the brief into chat.');
   } catch (error) { status(error.message, true); } finally { $('analyze').disabled = false; }

@@ -14,9 +14,9 @@ The reader runs locally and never edits your Blueprint assets. You do not need U
 
 Open the [live browser edition](https://ibrews.github.io/ue5-mcp/) and click **Try a sample graph**, or paste your own Blueprint clipboard text. You can also add text files and macros, reopen a `.bp-session.json`, inspect exact nodes and entry paths, and download the brief, findings or full session.
 
-**BlueprintUE links:** choose **BlueprintUE link**, enter the URL and click **Open BlueprintUE**. Use that page's copy button (or select and copy its **Code to copy** field), return to the reader, paste the text and click **Read Blueprint**. The source URL stays with the saved session. BlueprintUE does not currently allow direct cross-origin browser fetching, so this edition uses a guided import, not automatic URL fetching or a third-party proxy. The installed CLI/local page below can fetch links directly.
+**BlueprintUE links:** choose **BlueprintUE link**, paste a public or unlisted URL, and click **Read Blueprint**. Our fetch helper retrieves the export automatically; your browser parses it and produces the report. The source URL stays with the saved session. If a link is private, expired, blocked, or too large, use **Open BlueprintUE**, copy its **Code to copy** text, then choose **Use copied text instead**.
 
-Parsing, analysis and source hashing run in a browser worker. Raw text and files are never uploaded. The site loads its code from GitHub Pages; opening a source link contacts BlueprintUE in a separate tab. There are no analytics, AI requests, external fonts or fetch relays. The app's content security policy blocks outbound connections. Save the full session before closing or reloading: your data is kept in tab memory, not automatically stored. GitHub's ordinary site-access logging still applies.
+Parsing, analysis and source hashing run in a browser worker. Pasted text and files are never uploaded. For a link import, our Vercel helper receives the URL and retrieves its export from BlueprintUE; it extracts text but does not analyze graphs, call AI, save exports or cache responses. GitHub Pages and Vercel's ordinary access logging still applies, so use paste/files for sensitive source. There are no analytics or external fonts. Automatic imports allow up to 4 MiB of JSON response; paste/files allow 32 MiB of decoded text. Save the full session before closing or reloading: data is kept in tab memory, not automatically stored.
 
 ## 1. Install once
 
@@ -107,9 +107,9 @@ Captured from reader 0.2.2 on 2026-10-21 using Nicola's public [Extended dialogu
 
 ### Is there a hosted web app?
 
-Yes: **[ibrews.github.io/ue5-mcp](https://ibrews.github.io/ue5-mcp/)** is the browser-only edition. A `127.0.0.1` address still points to the optional local Node page on your own computer; it is not a shareable address.
+Yes: **[ibrews.github.io/ue5-mcp](https://ibrews.github.io/ue5-mcp/)** is the browser edition. A `127.0.0.1` address still points to the optional local Node page on your own computer; it is not a shareable address.
 
-Both interfaces share the parser, reports and saved-session format. The Pages edition uses a Web Worker and Web Crypto with no backend. Its BlueprintUE imports use the guided copy/paste flow described above; the local Node page supports automatic link fetching.
+Both interfaces share the parser, reports and saved-session format. The Pages edition uses a Web Worker and Web Crypto for local parsing, plus a narrowly scoped hosted helper for automatic BlueprintUE imports. The local Node page fetches those links directly. See the [browser and helper deployment guide](references/browser-edition.md).
 
 ## Things to Try
 

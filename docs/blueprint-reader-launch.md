@@ -12,7 +12,7 @@ Give it a BlueprintUE link, copied nodes, or text files with your graph and its 
 
 One real 30-node Blueprint went from 81,358 bytes of source to a 1,336-byte brief. The full source stays available for follow-up, so you can start with “what does this do?” and then get specific about a branch, an event, or a change you want to make.
 
-It works as a shared skill for Codex and Claude Code. You can also try it in your browser with no installation, then copy the brief into another chat tool. On the website, BlueprintUE links use a guided copy/paste import; the installed skill fetches links automatically.
+It works as a shared skill for Codex and Claude Code. You can also try it in your browser with no installation, then copy the brief into another chat tool. Paste raw code or a BlueprintUE link: the website fetches linked exports automatically and parses the graph locally. Pasted code and files stay in your browser.
 
 Free and open source under MIT. No Unreal editor, MCP connection, or AI API key needed to run the reader.
 
@@ -40,6 +40,6 @@ The brief deliberately omits detail. Do not describe this as lossless compressio
 
 ## Where to send people
 
-Send people to **[ibrews.github.io/ue5-mcp](https://ibrews.github.io/ue5-mcp/)**. The website parses text and files locally in a browser worker. BlueprintUE blocks direct browser fetching, so link mode opens the source and guides copying its text; no public proxy receives the link or graph. For automatic URL imports and agent integration, use the installed skill. The optional `127.0.0.1` page remains local to whoever runs `npm start`.
+Send people to **[ibrews.github.io/ue5-mcp](https://ibrews.github.io/ue5-mcp/)**. The website parses text and files locally in a browser worker. For automatic BlueprintUE imports, our Vercel helper fetches the linked export; graph parsing still runs locally. Pasted code and files never go to the helper. Use the installed skill for direct agent integration. The optional `127.0.0.1` page remains local to whoever runs `npm start`.
 
 The core stays free. Education, worked examples, review clinics and hands-on support are the complementary paid direction; no membership is needed to use the reader.

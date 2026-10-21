@@ -3,3 +3,5 @@ node_modules/
 *.tgz
 skills/blueprint-reader/work/
 skills/blueprint-reader/dist/
+skills/blueprint-reader/dist-helper/
+.vercel/

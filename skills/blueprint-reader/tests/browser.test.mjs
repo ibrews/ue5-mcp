@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile, readdir } from 'node:fs/promises';
 import { BrowserReader } from '../web/engine.mjs';
+import { fetchLinkedBlueprint } from '../web/fetch-link.mjs';
 import { example } from '../web/example.mjs';
 import { parseText, mergeBundles, sha256 } from '../scripts/parser.mjs';
 import { analyze, compactBrief } from '../scripts/analysis.mjs';
@@ -81,14 +82,34 @@ test('failed imports preserve the accepted browser session and stale IDs fail', 
   assert.throws(() => reader.download({ id: next.id, kind: '__proto__' }), /Unknown/);
 });
 
-test('guided BlueprintUE imports validate URLs and never send graph text over the network', async t => {
-  const network = t.mock.method(globalThis, 'fetch', () => { throw new Error('Network use is forbidden'); });
-  const reader = new BrowserReader(), url = 'https://blueprintue.com/blueprint/6v52d8no/';
-  await assert.rejects(reader.ingest({ url }), /Open the BlueprintUE link/);
-  await assert.rejects(reader.ingest({ url: 'https://evil.example/blueprint/a/', text: example }), /Expected an HTTPS/);
-  await reader.ingest({ url: url + '?tracking=discarded#fragment', text: example });
-  assert.equal(reader.current.sources[0].source.url, url);
+test('raw input stays local; link import sends only a canonical URL and ignores stale pasted text', async t => {
+  const url = 'https://blueprintue.com/blueprint/6v52d8no/';
+  const network = t.mock.method(globalThis, 'fetch', async (endpoint, options) => {
+    assert.equal(new URL(endpoint).searchParams.get('url'), url);
+    assert.equal(options.body, undefined);
+    assert.equal(options.credentials, 'omit');
+    return Response.json({ text: example, source: { url, title: 'Example' } });
+  });
+  const reader = new BrowserReader();
+  await reader.ingest({ text: example });
   assert.equal(network.mock.callCount(), 0);
+  await assert.rejects(reader.ingest({ url: 'https://evil.example/blueprint/a/' }), /Expected an HTTPS/);
+  await reader.ingest({ url: url + '?tracking=discarded#fragment', text: 'stale paste must be ignored' });
+  assert.equal(reader.current.sources[0].source.url, url);
+  assert.equal(reader.current.sources[0].text, example);
+  assert.equal(network.mock.callCount(), 1);
+});
+
+test('link failures preserve prior graph and offer manual fallback; oversized/invalid helper responses fail', async () => {
+  const url = 'https://blueprintue.com/blueprint/6v52d8no/';
+  const reader = new BrowserReader(input => fetchLinkedBlueprint(input, async () => Response.json({ error: 'Temporarily unavailable' }, { status: 502 })));
+  const good = await reader.ingest({ text: example });
+  await assert.rejects(reader.ingest({ url }), /Use copied text instead/);
+  assert.equal(reader.download({ id: good.id, kind: 'brief' }).text, good.brief);
+  await assert.rejects(fetchLinkedBlueprint(url, async () => new Response('x', { headers: { 'Content-Length': 5000000 } })), /too large/);
+  await assert.rejects(fetchLinkedBlueprint(url, async () => new Response('x'.repeat(4 * 1024 * 1024 + 1))), /too large/);
+  await assert.rejects(fetchLinkedBlueprint(url, async () => Response.json({ text: example, source: { url: 'https://evil.example/' } })), /Expected an HTTPS/);
+  await assert.rejects(fetchLinkedBlueprint(url, async () => Response.json({ text: example, source: { url: 'https://blueprintue.com/blueprint/other/' } })), /different Blueprint/);
 });
 
 test('browser rejects oversized, unsafe, RTF and invalid saved inputs before replacing state', async () => {

@@ -1,6 +1,6 @@
 {
   "name": "@ibrews/blueprint-reader",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "private": true,
   "type": "module",
   "description": "Read BlueprintUE links and Unreal Blueprint clipboard text as connected graphs",
@@ -11,7 +11,8 @@
     "test": "node --test tests/*.test.mjs",
     "test:live": "node --test tests/live/*.test.mjs",
     "start": "node scripts/serve.mjs",
-    "build:web": "node web/build.mjs"
+    "build:web": "node web/build.mjs",
+    "build:helper": "node helper/build.mjs"
   },
   "dependencies": {
     "entities": "6.0.1",
