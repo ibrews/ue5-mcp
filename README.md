@@ -21,6 +21,30 @@ This skill gives your AI that knowledge upfront so it doesn't have to rediscover
 
 ## Installation
 
+### Blueprint reader for Codex and Claude
+
+The companion [Blueprint reader skill](skills/blueprint-reader/SKILL.md) reads BlueprintUE links and raw Unreal clipboard exports without a running editor. It reconstructs nodes, pins, execution/data connections and supplied macro bodies, then provides an inventory, flow view, JSON or Mermaid. It preserves exact defaults and reports missing dependencies. It is read-only; use the main field manual for live editor work.
+
+With Node 20+ installed, run these commands from a checkout of this repository:
+
+```bash
+cd skills/blueprint-reader
+npm ci --ignore-scripts --no-audit --no-fund
+node scripts/install-skill.mjs both
+```
+
+The installer copies the skill and dependencies into `~/.codex/skills/blueprint-reader` and `~/.claude/skills/blueprint-reader`; use `codex` or `claude` instead of `both` for one client. It refuses to overwrite an existing installation. Start a new chat if the client has cached its skill catalog. Windows/macOS/Linux support plain text and URLs; RTF conversion additionally requires macOS `textutil`.
+
+```bash
+node scripts/read-blueprint.mjs "https://blueprintue.com/blueprint/6v52d8no/" --brief
+node scripts/read-blueprint.mjs "graph.txt" "macro.txt" --format json --output graph.json
+node scripts/read-blueprint.mjs "graph.txt" --graph s1:g1 --entry K2Node_Event_0 --format flow
+npm test
+npm run test:live
+```
+
+The default suite includes 102 real UEBlueprint node exports. The opt-in live suite downloads a public dialogue graph. A private camera-graph acceptance test runs when `BLUEPRINT_ACCEPTANCE_FILE` points to the development sample; private exports are never included in the repository. See [format/provenance](skills/blueprint-reader/references/format.md) for scope and limits. The parser uses the MIT-licensed [UEBlueprint](https://github.com/barsdeveloper/ueblueprint) grammar, pinned at 3.0.0.
+
 ### Claude Code
 
 ```bash
@@ -68,6 +92,8 @@ The skill is a single `SKILL.md` file. When loaded, it gives your AI agent conte
 The knowledge is organised by topic (reflection rules, stability hazards, subsystems, transport, patterns) so the agent can quickly find relevant guidance for whatever it's working on.
 
 ## Things to try
+
+For the Blueprint reader: paste a BlueprintUE link into either assistant and ask what it does; provide a main graph plus named macro exports and ask it to trace an input event; then ask for an edit plan with exact node IDs, pin names and an Unreal test. The reader's own CLI can verify each result using `--brief`, `--entry ... --format flow`, and `--node ...`.
 
 1. **Ask your agent to create a new Blueprint Actor** — with an MCP server connected, the Blueprint appears in the Content Browser within seconds; no manual editor clicking required. Then ask it to verify the asset exists by reading it back.
 2. **Ask your agent to create a Niagara particle system** — the skill steers it away from "create from empty" (which compiles but doesn't emit) and toward duplicating a working template. You should see particles in PIE.

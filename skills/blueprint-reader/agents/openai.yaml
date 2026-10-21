@@ -1,0 +1,4 @@
+interface:
+  display_name: "Blueprint Reader"
+  short_description: "Trace BlueprintUE links, raw graphs, and macros"
+  default_prompt: "Use $blueprint-reader to inspect this Unreal Blueprint, explain its behavior, and identify the exact nodes and pins involved in changes."
