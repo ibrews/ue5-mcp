@@ -28,7 +28,7 @@ try {
     const staging = `${destination}.install-${process.pid}`;
     try {
       await mkdir(staging);
-      for (const name of ['SKILL.md', 'agents', 'references', 'scripts', 'tests', 'package.json', 'package-lock.json', 'node_modules'])
+      for (const name of ['SKILL.md', 'agents', 'assets', 'references', 'scripts', 'tests', 'package.json', 'package-lock.json', 'node_modules'])
         await cp(join(root, name), join(staging, name), { recursive: true, dereference: true });
       await rename(staging, destination);
       console.log(`Installed ${destination}`);

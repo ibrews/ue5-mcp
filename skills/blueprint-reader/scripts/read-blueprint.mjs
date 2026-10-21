@@ -6,6 +6,8 @@ import { loadSource, MAX_BYTES } from './sources.mjs';
 import { mergeBundles } from './parser.mjs';
 import { report, mermaid, selectGraphs, selectNode, sliceEntry } from './report.mjs';
 import { flow } from './flow.mjs';
+import { analyze, compactBrief } from './analysis.mjs';
+import { loadSession, saveSession, sessionDocument } from './session.mjs';
 
 export function parseIsolated(text, source, timeout = 30000) {
   return new Promise((resolve, reject) => {
@@ -23,8 +25,11 @@ const help = `Blueprint reader — BlueprintUE URLs, raw clipboard text, Markdow
 Usage: node scripts/read-blueprint.mjs <file|URL> [more files...] [options]
        cat graph.txt | node scripts/read-blueprint.mjs -
 
-  --format summary|flow|json|mermaid|raw   Default: summary
-  --brief                           Inventory, entry points and warnings only
+  --format brief|analysis|summary|flow|json|mermaid|raw   Default: brief
+  --brief                           Compact by default; shorten legacy summary lists
+  --budget <bytes>                  Brief byte budget, 2000–64000 (default 8000)
+  --save-session <path>              Save full text locally for later queries
+  --session <path>                   Reload a saved session instead of input files
   --graph <ID|name|path>             Select one graph, e.g. s1:g2
   --node <name|GUID>                 Inspect one node and its connections
   --entry <name|GUID>                Trace execution successors and data dependencies
@@ -40,35 +45,44 @@ No editor connection is needed. This tool never edits or uploads your Blueprints
 
 export async function main(args = process.argv.slice(2)) {
   if (!args.length || args.includes('--help') || args.includes('-h')) { console.log(help); return; }
-  const options = { format: 'summary', limit: 80 }, inputs = [];
+  const options = { format: 'brief', limit: 80, budget: 8000 }, inputs = [];
   for (let i = 0; i < args.length; i++) {
     const a = args[i];
     if (['--brief', '--include-raw', '--strict'].includes(a)) options[a.slice(2)] = true;
-    else if (['--format', '--graph', '--node', '--entry', '--limit', '--output'].includes(a)) {
+    else if (['--format', '--graph', '--node', '--entry', '--limit', '--output', '--budget', '--save-session', '--session'].includes(a)) {
       if (!args[i + 1] || args[i + 1].startsWith('--')) throw new Error(`Missing value for ${a}.`);
       options[a.slice(2)] = args[++i];
     } else if (a.startsWith('--')) throw new Error(`Unknown option: ${a}`);
     else inputs.push(a);
   }
-  if (!inputs.length) throw new Error('Supply a file, BlueprintUE URL, or - for stdin.');
-  if (!['summary', 'flow', 'json', 'mermaid', 'raw'].includes(options.format)) throw new Error('Unsupported output format.');
+  if (!inputs.length && !options.session) throw new Error('Supply a file, BlueprintUE URL, - for stdin, or --session <file>.');
+  if (inputs.length && options.session) throw new Error('Use --session or input files, not both.');
+  if (!['brief', 'analysis', 'summary', 'flow', 'json', 'mermaid', 'raw'].includes(options.format)) throw new Error('Unsupported output format.');
+  if (options.node && ['analysis', 'flow', 'mermaid'].includes(options.format)) throw new Error('--node supports brief, summary, JSON and raw; use --entry to select a flow.');
+  options.budget = Number(options.budget);
+  if (!Number.isInteger(options.budget) || options.budget < 2000 || options.budget > 64000) throw new Error('--budget must be 2000–64000 UTF-8 bytes.');
   options.limit = Number(options.limit);
   if (!Number.isInteger(options.limit) || options.limit < 1 || options.limit > 20000) throw new Error('--limit must be an integer from 1 to 20000.');
-  const bundles = [];
-  for (const [i, input] of inputs.entries()) {
+  const bundles = [], loadedSources = options.session ? await loadSession(options.session) : [];
+  for (const input of inputs) {
     let loaded;
     if (input === '-') {
       const chunks = []; let size = 0;
       for await (const chunk of process.stdin) { size += chunk.length; if (size > MAX_BYTES) throw new Error('stdin exceeds 32 MiB.'); chunks.push(chunk); }
       loaded = { text: new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks)), source: { name: 'stdin', kind: 'stdin' } };
     } else loaded = await loadSource(input);
-    bundles.push(await parseIsolated(loaded.text, { ...loaded.source, id: `s${i + 1}` }));
+    loadedSources.push(loaded);
   }
+  sessionDocument(loadedSources);
+  for (const [i, loaded] of loadedSources.entries()) bundles.push(await parseIsolated(loaded.text, { ...loaded.source, id: `s${i + 1}` }));
   let bundle = mergeBundles(bundles);
+  if (options['save-session']) await saveSession(options['save-session'], loadedSources);
   if (options.entry) bundle = { ...bundle, graphs: [sliceEntry(selectGraphs(bundle, options.graph), options.entry)] };
   const graphs = selectGraphs(bundle, options.graph);
   let output;
-  if (options.format === 'summary') output = report(bundle, options);
+  if (options.format === 'brief') output = options.node ? report(bundle, options) : compactBrief({ ...bundle, graphs }, { budget: options.budget });
+  else if (options.format === 'analysis') output = JSON.stringify(analyze({ ...bundle, graphs }), null, 2) + '\n';
+  else if (options.format === 'summary') output = report(bundle, options);
   else if (options.format === 'flow') output = flow(bundle, options);
   else if (options.format === 'mermaid') {
     if (options.node) throw new Error('--node is not supported with Mermaid; select a graph.');

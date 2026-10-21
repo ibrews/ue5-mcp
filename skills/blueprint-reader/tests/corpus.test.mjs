@@ -4,6 +4,7 @@ import { readdir, readFile } from 'node:fs/promises';
 import { parseText, mergeBundles } from '../scripts/parser.mjs';
 import { loadSource } from '../scripts/sources.mjs';
 import { statistics } from '../scripts/report.mjs';
+import { analyze, compactBrief } from '../scripts/analysis.mjs';
 
 test('102 MIT-licensed UEBlueprint real node exports preserve every real pin', async () => {
   const root = new URL('../node_modules/ueblueprint/tests/', import.meta.url);
@@ -34,4 +35,9 @@ test('optional private acceptance graph: node, pin, link and macro coverage', { 
   assert.ok(bundle.graphs.every(g => g.edges.every(e => e.reciprocal)));
   assert.ok(bundle.graphs.every(g => g.warnings.every(w => w.code === 'external_macro')));
   assert.equal(bundle.graphs.flatMap(g => g.nodes).filter(n => n.macro?.graph_id).length, 13);
+  const analysis = analyze(bundle);
+  const camSet = bundle.graphs.find(g => g.name === 'CamSet');
+  assert.ok(analysis.findings.some(f => f.rule === 'identical_branch_targets' && f.graph === camSet.id && f.nodes.includes('K2Node_IfThenElse_1')));
+  assert.ok(analysis.findings.some(f => f.rule === 'tick_constant_step' && f.nodes.includes('K2Node_VariableSet_5')));
+  for (const budget of [2000, 4000, 8000, 16000]) assert.ok(Buffer.byteLength(compactBrief(bundle, { budget, analysis })) <= budget);
 });

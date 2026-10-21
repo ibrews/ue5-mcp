@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Blueprint Reader</title><link rel="stylesheet" href="/app.css"><script src="/app.js" defer></script></head>
+<body>
+<header class="masthead"><a href="/" class="brand"><span class="mark" aria-hidden="true">⌘</span> Blueprint Reader</a><span class="local"><span aria-hidden="true">●</span> Runs on your computer</span></header>
+<main>
+  <section class="intro"><p class="eyebrow">A FIELD GUIDE TO YOUR GRAPH</p><h1>Understand the graph.<br><em>Keep the context small.</em></h1><p>Paste an export, drop in its macros, or bring a BlueprintUE link. Get a readable overview and a short brief for your AI assistant.</p></section>
+  <div class="workspace">
+    <section class="source panel" aria-labelledby="source-title">
+      <div class="section-heading"><span class="number">01</span><h2 id="source-title">Bring a Blueprint</h2></div>
+      <form id="ingest-form">
+        <div class="mode" role="group" aria-label="Source type"><button type="button" id="paste-mode" aria-pressed="true">Paste text</button><button type="button" id="link-mode" aria-pressed="false">BlueprintUE link</button></div>
+        <div id="paste-input"><label for="source-text">Blueprint clipboard text</label><textarea id="source-text" rows="11" spellcheck="false" placeholder="Begin Object Class=/Script/BlueprintGraph…&#10;    …&#10;End Object"></textarea><p class="hint">Copy nodes in Unreal. Include macro bodies under their own headings, or add them as files below.</p></div>
+        <div id="link-input" hidden><label for="source-url">Public or unlisted BlueprintUE URL</label><input id="source-url" type="url" placeholder="https://blueprintue.com/blueprint/…/"><p class="hint">The export is fetched directly from BlueprintUE. Private or expired links need copied text.</p></div>
+        <label class="file-zone" for="source-files"><span>Add text files or a saved session</span><small>Main graph + macros · .txt, .md, .bp-session.json</small><input id="source-files" type="file" accept=".txt,.md,.json,.text" multiple></label>
+        <div class="file-info"><span id="file-status">No files selected</span><button id="clear-files" type="button" hidden>Clear</button></div>
+        <label for="budget">AI brief size</label><select id="budget"><option value="4000">Short · up to 4 KB</option><option value="8000" selected>Balanced · up to 8 KB</option><option value="16000">Detailed · up to 16 KB</option></select>
+        <button class="primary analyze" id="analyze" type="submit">Read Blueprint <span aria-hidden="true">↗</span></button>
+        <p class="privacy">No AI API key. No Blueprint uploads. Pasted text stays in this local session; links contact BlueprintUE.</p>
+        <p id="status" class="status" role="status" aria-live="polite"></p>
+      </form>
+    </section>
+    <section class="result panel" aria-labelledby="result-title">
+      <div class="section-heading"><span class="number">02</span><h2 id="result-title">Read the signal</h2><span class="badge" id="result-badge">READY WHEN YOU ARE</span></div>
+      <div id="empty" class="empty"><div class="graph-art" aria-hidden="true"><span>Event</span><i>→</i><span>Action</span><i>→</i><span>Result</span></div><h3>Thousands of lines.<br>A useful starting point.</h3><p>Your overview, evidence-based tips and compact AI brief will appear here. Keep the complete export available for precise follow-up questions.</p><div class="empty-notes"><span>01 / What it does</span><span>02 / What to inspect</span><span>03 / What to test</span></div></div>
+      <div id="results" hidden>
+        <div id="stats" class="stats"></div>
+        <section class="overview"><p class="eyebrow">PLAIN-LANGUAGE OVERVIEW</p><p id="description"></p><p class="hint">Generated from visible operations and wiring. Project intent and runtime behavior may need more context.</p></section>
+        <div class="report-tabs" role="group" aria-label="Report view"><button type="button" data-view="tips" aria-pressed="true">Improvement tips <span id="tip-count"></span></button><button type="button" data-view="brief" aria-pressed="false">AI brief</button><button type="button" data-view="explore" aria-pressed="false">Explore</button></div>
+        <section id="tips-view" class="view"><div id="findings"></div><div class="dependencies"><h3>Missing context</h3><div id="dependencies"></div></div></section>
+        <section id="brief-view" class="view" hidden><div class="actions"><button id="copy-brief" type="button" class="primary">Copy AI brief</button><a id="download-brief" class="button" href="#">Save brief</a></div><p id="brief-size" class="hint"></p><pre id="brief-text" tabindex="0"></pre><p class="hint">Share this brief first. Give your assistant the saved session file when it needs to inspect exact nodes.</p></section>
+        <section id="explore-view" class="view" hidden><label for="graph-select">Graph</label><select id="graph-select"></select><label for="entry-select">Entry point</label><select id="entry-select"></select><p id="entry-note" class="hint"></p><button id="trace" type="button" class="button">Trace this entry</button><label for="node-select">Or inspect an exact node ID</label><div class="inline-form"><input id="node-select" placeholder="K2Node_CallFunction_3"><button id="inspect" type="button" class="button">Inspect</button></div><pre id="trace-text" tabindex="0">Select an entry or a node to inspect its connections.</pre></section>
+        <footer class="result-footer"><a id="download-session" class="button" href="#">Save full local session</a><a id="download-analysis" href="#">Download findings JSON</a><p class="hint">A session contains your original text, including private graph data. The brief is intentionally incomplete; the saved session preserves the full source.</p></footer>
+      </div>
+    </section>
+  </div>
+  <footer class="page-footer">BLUEPRINT READER <span>Static graph analysis · No editor changes · Alex Coulombe Presents</span></footer>
+</main>
+</body></html>

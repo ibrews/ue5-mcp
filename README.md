@@ -23,7 +23,7 @@ This skill gives your AI that knowledge upfront so it doesn't have to rediscover
 
 ### Blueprint reader for Codex and Claude
 
-The companion [Blueprint reader skill](skills/blueprint-reader/SKILL.md) reads BlueprintUE links and raw Unreal clipboard exports without a running editor. It reconstructs nodes, pins, execution/data connections and supplied macro bodies, then provides an inventory, flow view, JSON or Mermaid. It preserves exact defaults and reports missing dependencies. It is read-only; use the main field manual for live editor work.
+The companion [Blueprint reader skill](skills/blueprint-reader/SKILL.md) reads BlueprintUE links and raw Unreal clipboard exports without a running editor. It reconstructs nodes, pins, execution/data connections and supplied macro bodies, then provides a compact AI brief, plain-language overview, evidence-based improvement tips, flow view, JSON or Mermaid. A local paste/link page keeps full exports outside the chat context. It preserves exact defaults and reports missing dependencies. It is read-only; use the main field manual for live editor work.
 
 With Node 20+ installed, run these commands from a checkout of this repository:
 
@@ -37,15 +37,21 @@ On macOS/Linux the installer copies the skill and dependencies into `~/.codex/sk
 
 ```bash
 node scripts/read-blueprint.mjs "https://blueprintue.com/blueprint/6v52d8no/" --brief
-node scripts/read-blueprint.mjs "graph.txt" "macro.txt" --format json --output graph.json
+node scripts/read-blueprint.mjs "graph.txt" "macro.txt" --save-session camera.bp-session.json
+node scripts/read-blueprint.mjs --session camera.bp-session.json --budget 4000
+npm start
 node scripts/read-blueprint.mjs "graph.txt" --graph s1:g1 --entry K2Node_Event_0 --format flow
 npm test
 npm run test:live
 ```
 
+Open the loopback URL printed by `npm start` to paste text, choose graph/macro files or a saved session, or enter a BlueprintUE link. The page offers an overview, improvement tips with exact node evidence and suggested tests, missing dependencies, a copyable AI brief, and entry/node inspection. Save the full local session for follow-ups. No AI API key is required; source text stays on your computer, and link ingestion contacts BlueprintUE.
+
+CLI briefs default to an 8,000-byte UTF-8 cap, configurable with `--budget` (2,000–64,000). Byte counts are not token counts. Omissions are explicit; use `--format analysis` for all findings or focused node/entry queries for details. The full source is preserved in saved sessions. Advice is based on a small set of static patterns and needs review and Unreal testing.
+
 The default suite includes 102 real UEBlueprint node exports. The opt-in live suite downloads a public dialogue graph. A private camera-graph acceptance test runs when `BLUEPRINT_ACCEPTANCE_FILE` points to the development sample; private exports are never included in the repository. See [format/provenance](skills/blueprint-reader/references/format.md) for scope and limits. The parser uses the MIT-licensed [UEBlueprint](https://github.com/barsdeveloper/ueblueprint) grammar, pinned at 3.0.0.
 
-Validated on macOS with Node 26.10.0 (all 17 tests, including the private three-graph sample and live URL), and independently on Windows with Node 24.20 (four harvested exports, zero parse failures, successful dependency installation and data-volume discovery junction). The Windows inputs comprise two 601-node main-graph exports and 38-node/60-node macro exports. Macro-body warnings on separately supplied graphs are expected; provide the main graph and its macro bodies in one invocation to resolve them. These checks establish static parsing and installation, not Unreal compilation or runtime behavior.
+The 0.2 intake update passes 26 tests on macOS/Node 26.10.0, including the private camera sample and live URL. The local page was also exercised with pasted text and the public dialogue graph, including entry tracing. The original parser was validated on macOS with Node 26.10.0 (17 tests including the private three-graph sample and live URL), and independently on Windows with Node 24.20 (four harvested exports, zero parse failures, successful dependency installation and data-volume discovery junction). The Windows inputs comprise two 601-node main-graph exports and 38-node/60-node macro exports. Macro-body warnings on separately supplied graphs are expected; provide the main graph and its macro bodies in one invocation to resolve them. These checks establish static parsing and installation, not Unreal compilation or runtime behavior.
 
 ### Claude Code
 
