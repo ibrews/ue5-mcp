@@ -4,6 +4,10 @@ Read an Unreal Blueprint without pasting thousands of lines into chat. Start wit
 
 The reader runs locally and never edits your Blueprint assets. You do not need Unreal, an MCP server or an AI API key. The parser, CLI, local page and agent skill are free under the [MIT license](LICENSE).
 
+![Blueprint Reader workflow: parse Blueprint text or a BlueprintUE link locally, share a small brief, and save the full source for follow-up.](https://raw.githubusercontent.com/ibrews/ue5-mcp/main/docs/assets/blueprint-reader-overview.png)
+
+**A real example:** [this public 30-node graph](https://blueprintue.com/blueprint/6v52d8no/) produced a 1,336-byte brief from 81,358 bytes of source with reader 0.2.2. This is a summary, not lossless compression or a token-count guarantee. Save the full session and inspect specific nodes when you need more detail.
+
 ## 1. Install once
 
 You need **Git** and **Node.js 20 or newer** (`node --version`). The commands below install the same reader for Codex and Claude Code. Run them in your terminal, not inside a chat message.
@@ -81,6 +85,21 @@ Open the `http://127.0.0.1:PORT` address printed in the terminal. Paste clipboar
 The overview comes from visible nodes and types; it is a starting point for interpretation. Improvement tips include evidence and a suggested test. **Explore** traces entry points or inspects an exact node ID. **Save full local session** preserves original text for later inspection. Saved sessions can contain private project data; share them only intentionally.
 
 The page uses no external fonts, analytics, uploads or model calls. Link ingestion contacts BlueprintUE. One successful ingestion replaces the server's previous session; a failed parse preserves it. Press **Ctrl+C** in the terminal to stop the server and clear its in-memory session. Saved files remain on disk.
+
+<details>
+<summary>See the actual local page with a public BlueprintUE graph</summary>
+
+![Actual Blueprint Reader interface showing a BlueprintUE link, 30 nodes, 107 pins, an overview and the AI brief tab.](https://raw.githubusercontent.com/ibrews/ue5-mcp/main/docs/assets/blueprint-reader-local-ui.png)
+
+Captured from reader 0.2.2 on 2026-10-21 using Nicola's public [Extended dialogue system](https://blueprintue.com/blueprint/6v52d8no/) export. This graph has no matches for the reader's supported improvement checks, and its missing ForEachLoop body is reported. The screenshot is a real app capture; the graphic above is a workflow illustration.
+
+</details>
+
+### Is there a hosted web app?
+
+The source and instructions are [public on GitHub](https://github.com/ibrews/ue5-mcp). The reader page currently runs on your own computer: a `127.0.0.1` URL is local, and other people cannot use your address to open it. There is no hosted reader or GitHub Pages site as of 2026-10-21.
+
+[GitHub Pages serves static files](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages). This version uses a local Node server for parsing and BlueprintUE fetching, so publishing the HTML alone would not make a working online reader. A Pages edition would need browser-side parsing and a separate solution for BlueprintUE link fetching. The local page remains the complete working interface.
 
 ## Things to Try
 

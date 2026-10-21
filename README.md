@@ -1,5 +1,15 @@
 # ue5-mcp
 
+**New: [Blueprint Reader](skills/blueprint-reader/README.md).** Give Codex or Claude Code a BlueprintUE link or raw Unreal clipboard export, then start with a compact brief and inspect the nodes that matter. Free, local and MIT licensed.
+
+[![Blueprint Reader: Blueprint text or a BlueprintUE link is parsed locally into an overview, improvement tips and node evidence. A real 30-node example turns 81,358 source bytes into a 1,336-byte brief.](docs/assets/blueprint-reader-overview.png)](skills/blueprint-reader/README.md)
+
+The illustration shows the workflow. The numbers come from [this public graph](https://blueprintue.com/blueprint/6v52d8no/), checked with reader 0.2.2. The brief summarizes and omits detail; a saved session retains the original source for follow-up. Byte counts are not token counts.
+
+[Get started](skills/blueprint-reader/README.md#1-install-once) · [See the actual interface](skills/blueprint-reader/README.md#3-use-the-pastelink-page) · [Share the reader](docs/blueprint-reader-launch.md)
+
+## Live editor field manual
+
 A field manual for AI agents driving Unreal Engine 5 through MCP.
 
 When an AI agent connects to the UE5 editor through an MCP server, it gains access to tools for manipulating Blueprints, materials, Niagara particles, MetaSound audio, meshes, widgets, levels — anything UE's reflection surface exposes. The tools are powerful but UE is full of undocumented quirks: APIs that silently no-op, crash patterns that only surface at runtime, render paths that compile cleanly but produce nothing visible, async operations that don't block, and reflection rules that bite anyone who treats the engine like a typical scripting target.
@@ -96,7 +106,7 @@ The skill is a single `SKILL.md` file. When loaded, it gives your AI agent conte
 
 The knowledge is organised by topic (reflection rules, stability hazards, subsystems, transport, patterns) so the agent can quickly find relevant guidance for whatever it's working on.
 
-## Things to try
+## Things to Try
 
 For the Blueprint reader: paste a BlueprintUE link into either assistant and ask what it does; provide a main graph plus named macro exports and ask it to trace an input event; then ask for an edit plan with exact node IDs, pin names and an Unreal test. The reader's own CLI can verify each result using `--brief`, `--entry ... --format flow`, and `--node ...`.
 
