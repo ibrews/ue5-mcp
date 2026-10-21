@@ -2,3 +2,4 @@
 node_modules/
 *.tgz
 skills/blueprint-reader/work/
+skills/blueprint-reader/dist/

@@ -1,10 +1,11 @@
+export function startApp(api) {
 const $ = id => document.getElementById(id);
 let mode = 'paste', result = null;
 const bytes = n => new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(n / 1024) + ' KB';
 function status(text, error = false) { $('status').textContent = text; $('status').classList.toggle('error', error); }
 function setMode(value) {
   mode = value;
-  $('paste-input').hidden = value !== 'paste'; $('link-input').hidden = value !== 'link';
+  $('paste-input').hidden = value !== 'paste' && !api.browser; $('link-input').hidden = value !== 'link';
   $('paste-mode').setAttribute('aria-pressed', value === 'paste'); $('link-mode').setAttribute('aria-pressed', value === 'link');
 }
 $('paste-mode').addEventListener('click', () => setMode('paste'));
@@ -40,8 +41,7 @@ async function inspect(node) {
   if (node) params.set('node', node); else params.set('entry', $('entry-select').value);
   $('trace-text').textContent = 'Tracing connections…';
   try {
-    const response = await fetch('/api/inspect?' + params); const data = await response.json();
-    if (!response.ok) throw new Error(data.error);
+    const data = await api.inspect(Object.fromEntries(params));
     $('trace-text').textContent = data.text;
   } catch (error) { $('trace-text').textContent = error.message; }
 }
@@ -72,7 +72,7 @@ function render(data) {
   if (dependencies.length > 30) $('dependencies').append(element('p', `${dependencies.length - 30} more dependencies in the full analysis.`, 'hint'));
   $('brief-text').textContent = data.brief;
   $('brief-size').textContent = `${bytes(data.source_bytes)} of source → ${bytes(data.brief_bytes)} of brief. Byte counts are not token counts. The brief summarizes and omits detail; the full source remains available.`;
-  for (const kind of ['brief', 'session', 'analysis']) $('download-' + kind).href = '/api/download?' + new URLSearchParams({ id: data.id, kind });
+
   $('graph-select').replaceChildren();
   for (const g of analysis.graphs) { const option = element('option', `${g.name} · ${g.id} · ${g.nodes} nodes`); option.value = g.id; $('graph-select').append(option); }
   graphChanged(); showView('tips'); $('trace-text').textContent = 'Select an entry or a node to inspect its connections.';
@@ -80,6 +80,8 @@ function render(data) {
 $('ingest-form').addEventListener('submit', async event => {
   event.preventDefault(); $('analyze').disabled = true; status('Reading the graph and checking connections…');
   try {
+    const chosen = [...$('source-files').files];
+    if (chosen.length > 100 || chosen.reduce((n, f) => n + f.size, 0) > 32 * 1024 * 1024) throw new Error('Use at most 100 files totaling 32 MiB; split larger inputs.');
     const files = [];
     for (const file of $('source-files').files) {
       if (file.size > 32 * 1024 * 1024) throw new Error('A file exceeds 32 MiB. Split it by graph.');
@@ -88,9 +90,8 @@ $('ingest-form').addEventListener('submit', async event => {
       const text = new TextDecoder(encoding, { fatal: true }).decode(raw);
       if (file.name.endsWith('.json')) files.push({ session: JSON.parse(text) }); else files.push({ name: file.name, text });
     }
-    const body = { budget: Number($('budget').value), files, text: mode === 'paste' ? $('source-text').value : '', url: mode === 'link' ? $('source-url').value.trim() : '' };
-    const response = await fetch('/api/ingest', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
-    const data = await response.json(); if (!response.ok) throw new Error(data.error);
+    const body = { budget: Number($('budget').value), files, text: mode === 'paste' || api.browser ? $('source-text').value : '', url: mode === 'link' ? $('source-url').value.trim() : '' };
+    const data = await api.ingest(body);
     render(data); status('Ready. Save the session for follow-up questions; copy only the brief into chat.');
   } catch (error) { status(error.message, true); } finally { $('analyze').disabled = false; }
 });
@@ -101,3 +102,14 @@ $('copy-brief').addEventListener('click', async () => {
 $('graph-select').addEventListener('change', graphChanged);
 $('trace').addEventListener('click', () => inspect());
 $('inspect').addEventListener('click', () => { if ($('node-select').value.trim()) inspect($('node-select').value.trim()); });
+
+for (const kind of ['brief', 'session', 'analysis']) $('download-' + kind).addEventListener('click', async event => {
+  event.preventDefault();
+  try {
+    const file = await api.download(kind, result.id);
+    const url = URL.createObjectURL(file.blob), link = document.createElement('a');
+    link.href = url; link.download = file.name; document.body.append(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  } catch (error) { status(error.message, true); }
+});
+}

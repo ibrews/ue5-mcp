@@ -1,5 +1,7 @@
 # Blueprint Reader
 
+**[Open Blueprint Reader in your browser →](https://ibrews.github.io/ue5-mcp/)** Free, no account or installation.
+
 Read an Unreal Blueprint without pasting thousands of lines into chat. Start with a BlueprintUE link, copied nodes or text files containing a graph and its macros. Get a short brief, a plain-language overview, missing dependencies and improvement tips tied to specific nodes.
 
 The reader runs locally and never edits your Blueprint assets. You do not need Unreal, an MCP server or an AI API key. The parser, CLI, local page and agent skill are free under the [MIT license](LICENSE).
@@ -7,6 +9,14 @@ The reader runs locally and never edits your Blueprint assets. You do not need U
 ![Blueprint Reader workflow: parse Blueprint text or a BlueprintUE link locally, share a small brief, and save the full source for follow-up.](https://raw.githubusercontent.com/ibrews/ue5-mcp/main/docs/assets/blueprint-reader-overview.png)
 
 **A real example:** [this public 30-node graph](https://blueprintue.com/blueprint/6v52d8no/) produced a 1,336-byte brief from 81,358 bytes of source with reader 0.2.2. This is a summary, not lossless compression or a token-count guarantee. Save the full session and inspect specific nodes when you need more detail.
+
+## Try it without installing anything
+
+Open the [live browser edition](https://ibrews.github.io/ue5-mcp/) and click **Try a sample graph**, or paste your own Blueprint clipboard text. You can also add text files and macros, reopen a `.bp-session.json`, inspect exact nodes and entry paths, and download the brief, findings or full session.
+
+**BlueprintUE links:** choose **BlueprintUE link**, enter the URL and click **Open BlueprintUE**. Use that page's copy button (or select and copy its **Code to copy** field), return to the reader, paste the text and click **Read Blueprint**. The source URL stays with the saved session. BlueprintUE does not currently allow direct cross-origin browser fetching, so this edition uses a guided import, not automatic URL fetching or a third-party proxy. The installed CLI/local page below can fetch links directly.
+
+Parsing, analysis and source hashing run in a browser worker. Raw text and files are never uploaded. The site loads its code from GitHub Pages; opening a source link contacts BlueprintUE in a separate tab. There are no analytics, AI requests, external fonts or fetch relays. The app's content security policy blocks outbound connections. Save the full session before closing or reloading: your data is kept in tab memory, not automatically stored. GitHub's ordinary site-access logging still applies.
 
 ## 1. Install once
 
@@ -97,11 +107,13 @@ Captured from reader 0.2.2 on 2026-10-21 using Nicola's public [Extended dialogu
 
 ### Is there a hosted web app?
 
-The source and instructions are [public on GitHub](https://github.com/ibrews/ue5-mcp). The reader page currently runs on your own computer: a `127.0.0.1` URL is local, and other people cannot use your address to open it. There is no hosted reader or GitHub Pages site as of 2026-10-21.
+Yes: **[ibrews.github.io/ue5-mcp](https://ibrews.github.io/ue5-mcp/)** is the browser-only edition. A `127.0.0.1` address still points to the optional local Node page on your own computer; it is not a shareable address.
 
-[GitHub Pages serves static files](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages). This version uses a local Node server for parsing and BlueprintUE fetching, so publishing the HTML alone would not make a working online reader. A Pages edition would need browser-side parsing and a separate solution for BlueprintUE link fetching. The local page remains the complete working interface.
+Both interfaces share the parser, reports and saved-session format. The Pages edition uses a Web Worker and Web Crypto with no backend. Its BlueprintUE imports use the guided copy/paste flow described above; the local Node page supports automatic link fetching.
 
 ## Things to Try
+
+For a no-install start, [open the live reader](https://ibrews.github.io/ue5-mcp/) and choose **Try a sample graph**. Its two branch outcomes deliberately enter the same destination; use **Inspect evidence** to see the exact pins.
 
 Run these from the reader directory:
 

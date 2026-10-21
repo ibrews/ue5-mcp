@@ -11,7 +11,7 @@ import { sessionDocument } from './session.mjs';
 import { flow } from './flow.mjs';
 import { selectGraphs, sliceEntry, nodeReport, selectNode } from './report.mjs';
 
-const assets = new Map([['/', ['index.html', 'text/html']], ['/app.css', ['app.css', 'text/css']], ['/app.js', ['app.js', 'text/javascript']]]);
+const assets = new Map([['/', ['index.html', 'text/html']], ['/app.css', ['app.css', 'text/css']], ['/app.js', ['app.js', 'text/javascript']], ['/local-app.js', ['local-app.js', 'text/javascript']]]);
 export function createReaderServer() {
   // One local session at a time. Raw exports are never sent to an LLM or uploaded
   // to BlueprintUE. Restarting the server clears its in-memory session.

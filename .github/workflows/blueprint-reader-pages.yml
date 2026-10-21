@@ -1,0 +1,47 @@
+name: Blueprint Reader Pages
+on:
+  push:
+    branches: [main]
+    paths: ['skills/blueprint-reader/**', '.github/workflows/blueprint-reader-pages.yml']
+  pull_request:
+    paths: ['skills/blueprint-reader/**', '.github/workflows/blueprint-reader-pages.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: blueprint-reader-pages-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: skills/blueprint-reader
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: skills/blueprint-reader/package-lock.json
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm test
+      - run: npm run build:web
+      - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main'
+        with:
+          path: skills/blueprint-reader/dist
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

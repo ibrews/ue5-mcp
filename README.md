@@ -2,11 +2,13 @@
 
 **New: [Blueprint Reader](skills/blueprint-reader/README.md).** Give Codex or Claude Code a BlueprintUE link or raw Unreal clipboard export, then start with a compact brief and inspect the nodes that matter. Free, local and MIT licensed.
 
+**[Try Blueprint Reader in your browser →](https://ibrews.github.io/ue5-mcp/)** No installation or account. Paste raw text, add files, or reopen a saved session; parsing stays in your browser. BlueprintUE link mode guides you through opening the source and copying its text because BlueprintUE blocks direct browser imports. The installed reader can fetch links automatically.
+
 [![Blueprint Reader: Blueprint text or a BlueprintUE link is parsed locally into an overview, improvement tips and node evidence. A real 30-node example turns 81,358 source bytes into a 1,336-byte brief.](docs/assets/blueprint-reader-overview.png)](skills/blueprint-reader/README.md)
 
 The illustration shows the workflow. The numbers come from [this public graph](https://blueprintue.com/blueprint/6v52d8no/), checked with reader 0.2.2. The brief summarizes and omits detail; a saved session retains the original source for follow-up. Byte counts are not token counts.
 
-[Get started](skills/blueprint-reader/README.md#1-install-once) · [See the actual interface](skills/blueprint-reader/README.md#3-use-the-pastelink-page) · [Share the reader](docs/blueprint-reader-launch.md)
+[Open the live reader](https://ibrews.github.io/ue5-mcp/) · [Install the agent skill](skills/blueprint-reader/README.md#1-install-once) · [Share the reader](docs/blueprint-reader-launch.md)
 
 ## Live editor field manual
 

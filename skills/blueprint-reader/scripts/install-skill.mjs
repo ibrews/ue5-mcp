@@ -33,7 +33,7 @@ export async function installSkill(target = 'both', { sourceRoot = root, userRoo
     const staging = `${destination}.install-${process.pid}`;
     try {
       await mkdir(staging);
-      for (const name of ['SKILL.md', 'README.md', 'LICENSE', 'agents', 'assets', 'references', 'scripts', 'tests', 'package.json', 'package-lock.json', 'node_modules'])
+      for (const name of ['SKILL.md', 'README.md', 'LICENSE', 'agents', 'assets', 'references', 'scripts', 'tests', 'web', 'package.json', 'package-lock.json', 'node_modules'])
         await cp(join(sourceRoot, name), join(staging, name), { recursive: true, dereference: true });
       await rename(staging, destination);
       console.log(`Installed ${destination}`);

@@ -1,4 +1,5 @@
 import { statistics } from './report.mjs';
+import { byteLength, utf8 } from './text.mjs';
 
 const label = (value, max = 140) => String(value ?? '').replace(/[\r\n\t]+/g, ' ').slice(0, max);
 const unique = values => [...new Set(values)];
@@ -152,14 +153,14 @@ export function compactBrief(bundle, { budget = 8000, analysis = analyze(bundle)
   for (let row = 0; row < Math.max(0, ...sections.map(s => s.length)); row++) for (let i = 0; i < sections.length; i++) {
     if (!sections[i][row]) continue;
     picked[i].push(sections[i][row]);
-    if (Buffer.byteLength(render()) > allowance) { picked[i].pop(); omitted[i]++; }
+    if (byteLength(render()) > allowance) { picked[i].pop(); omitted[i]++; }
   }
   let result = render();
   // Very small budgets and pathological identifiers can overflow the overview.
   // Never split UTF-8 code points or silently pretend the brief is complete.
-  if (Buffer.byteLength(result) > budget) {
+  if (byteLength(result) > budget) {
     const notice = '\n[Brief truncated to the requested byte budget; use the full analysis/session.]\n';
-    const bytes = Buffer.from(result), max = budget - Buffer.byteLength(notice);
+    const bytes = utf8(result), max = budget - byteLength(notice);
     result = new TextDecoder('utf-8', { fatal: false }).decode(bytes.subarray(0, max)).replace(/\uFFFD$/, '') + notice;
   }
   return result;

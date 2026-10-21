@@ -1,6 +1,6 @@
 # Sharing Blueprint Reader
 
-Ready-to-adapt launch copy for Alex Coulombe Presents. These are drafts, not a record of posts sent. Link people to the [reader's getting-started guide](https://github.com/ibrews/ue5-mcp/tree/main/skills/blueprint-reader#readme), not a local `127.0.0.1` address.
+Ready-to-adapt launch copy for Alex Coulombe Presents. These are drafts, not a record of posts sent. Link people to the [live browser reader](https://ibrews.github.io/ue5-mcp/) or [agent installation guide](https://github.com/ibrews/ue5-mcp/tree/main/skills/blueprint-reader#readme), not a local `127.0.0.1` address.
 
 ## Main post
 
@@ -12,19 +12,19 @@ Give it a BlueprintUE link, copied nodes, or text files with your graph and its 
 
 One real 30-node Blueprint went from 81,358 bytes of source to a 1,336-byte brief. The full source stays available for follow-up, so you can start with “what does this do?” and then get specific about a branch, an event, or a change you want to make.
 
-It works as a shared skill for Codex and Claude Code. There's also a local paste/link page where you can copy the brief into another chat tool.
+It works as a shared skill for Codex and Claude Code. You can also try it in your browser with no installation, then copy the brief into another chat tool. On the website, BlueprintUE links use a guided copy/paste import; the installed skill fetches links automatically.
 
 Free and open source under MIT. No Unreal editor, MCP connection, or AI API key needed to run the reader.
 
 Try it on a graph you've been meaning to untangle. I'd love to hear what it helps you understand, and where it gets stuck.
 
-[Get Blueprint Reader](https://github.com/ibrews/ue5-mcp/tree/main/skills/blueprint-reader#readme)
+[Try Blueprint Reader](https://ibrews.github.io/ue5-mcp/)
 
 ## Short post
 
-I accidentally broke Claude with too much raw Unreal Blueprint code. So I built Blueprint Reader: paste an export or a BlueprintUE link, get a compact AI brief, then inspect the exact nodes. Free, local, MIT licensed. Works with Codex and Claude Code.
+I accidentally broke Claude with too much raw Unreal Blueprint code. So I built Blueprint Reader: paste an export, get a compact AI brief, then inspect the exact nodes. Free, MIT licensed, and now runs in your browser. Also available as a skill for Codex and Claude Code.
 
-[Try it](https://github.com/ibrews/ue5-mcp/tree/main/skills/blueprint-reader#readme)
+[Try it](https://ibrews.github.io/ue5-mcp/)
 
 ## One sentence
 
@@ -40,6 +40,6 @@ The brief deliberately omits detail. Do not describe this as lossless compressio
 
 ## Where to send people
 
-Use the GitHub guide above. The `127.0.0.1` page is local to whoever runs `npm start`; it is not a hosted demo. No Pages site is configured as of 2026-10-21. A static showcase is possible on GitHub Pages, while a functional Pages reader needs browser-side parsing and a solution for fetching BlueprintUE sources.
+Send people to **[ibrews.github.io/ue5-mcp](https://ibrews.github.io/ue5-mcp/)**. The website parses text and files locally in a browser worker. BlueprintUE blocks direct browser fetching, so link mode opens the source and guides copying its text; no public proxy receives the link or graph. For automatic URL imports and agent integration, use the installed skill. The optional `127.0.0.1` page remains local to whoever runs `npm start`.
 
 The core stays free. Education, worked examples, review clinics and hands-on support are the complementary paid direction; no membership is needed to use the reader.
