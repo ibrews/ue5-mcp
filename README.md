@@ -21,37 +21,34 @@ This skill gives your AI that knowledge upfront so it doesn't have to rediscover
 
 ## Installation
 
-### Blueprint reader for Codex and Claude
+### Blueprint Reader for Codex and Claude
 
-The companion [Blueprint reader skill](skills/blueprint-reader/SKILL.md) reads BlueprintUE links and raw Unreal clipboard exports without a running editor. It reconstructs nodes, pins, execution/data connections and supplied macro bodies, then provides a compact AI brief, plain-language overview, evidence-based improvement tips, flow view, JSON or Mermaid. A local paste/link page keeps full exports outside the chat context. It preserves exact defaults and reports missing dependencies. It is read-only; use the main field manual for live editor work.
+[Blueprint Reader](skills/blueprint-reader/README.md) turns BlueprintUE links and raw Unreal clipboard exports into a short AI brief, an overview, and improvement tips with exact node evidence. Paste a whole graph plus its macros into the local page, keep the full source in a saved session, and inspect individual entries or nodes when needed. No Unreal editor, MCP connection or AI API key is required.
 
-With Node 20+ installed, run these commands from a checkout of this repository:
+With **Git and Node.js 20+**, run in Terminal on macOS/Linux:
 
 ```bash
-cd skills/blueprint-reader
+git clone https://github.com/ibrews/ue5-mcp.git
+cd ue5-mcp/skills/blueprint-reader
 npm ci --ignore-scripts --no-audit --no-fund
 node scripts/install-skill.mjs both
 ```
 
-On macOS/Linux the installer copies the skill and dependencies into `~/.codex/skills/blueprint-reader` and `~/.claude/skills/blueprint-reader`; use `codex` or `claude` instead of `both` for one client. On Windows, clone and install dependencies on a verified non-system data volume first: the installer creates directory junctions for skill discovery, keeping payloads on that data volume. Keep the source checkout available while those junctions are installed. It refuses to overwrite an existing installation. Start a new chat if the client has cached its skill catalog. Windows/macOS/Linux support plain text and URLs; RTF conversion additionally requires macOS `textutil`.
+The installer uses `~/.agents/skills/blueprint-reader` for Codex and `~/.claude/skills/blueprint-reader` for Claude Code. Use `codex` or `claude` instead of `both` for a single client. Open a new agent session after installation.
 
-```bash
-node scripts/read-blueprint.mjs "https://blueprintue.com/blueprint/6v52d8no/" --brief
-node scripts/read-blueprint.mjs "graph.txt" "macro.txt" --save-session camera.bp-session.json
-node scripts/read-blueprint.mjs --session camera.bp-session.json --budget 4000
-npm start
-node scripts/read-blueprint.mjs "graph.txt" --graph s1:g1 --entry K2Node_Event_0 --format flow
-npm test
-npm run test:live
-```
+| Client | First prompt |
+|---|---|
+| Codex | `Use $blueprint-reader to explain https://blueprintue.com/blueprint/6v52d8no/ and identify missing context.` |
+| Claude Code | `/blueprint-reader Explain https://blueprintue.com/blueprint/6v52d8no/ and identify missing context.` |
+| Any chat client | Run `npm start`, open the printed local URL, ingest a graph and use **Copy AI brief**. |
 
-Open the loopback URL printed by `npm start` to paste text, choose graph/macro files or a saved session, or enter a BlueprintUE link. The page offers an overview, improvement tips with exact node evidence and suggested tests, missing dependencies, a copyable AI brief, and entry/node inspection. Save the full local session for follow-ups. No AI API key is required; source text stays on your computer, and link ingestion contacts BlueprintUE.
+**Windows:** clone and install on a non-system data drive; the installer creates skill-discovery junctions. **Upgrading an existing install:** preserve/move the old copy first; the installer refuses overwrites and duplicate legacy Codex installs. Follow the [complete getting-started and update guide](skills/blueprint-reader/README.md) for platform-specific commands, saved sessions, troubleshooting, testing and limits.
 
-CLI briefs default to an 8,000-byte UTF-8 cap, configurable with `--budget` (2,000–64,000). Byte counts are not token counts. Omissions are explicit; use `--format analysis` for all findings or focused node/entry queries for details. The full source is preserved in saved sessions. Advice is based on a small set of static patterns and needs review and Unreal testing.
+The core and local page are free and [MIT licensed](LICENSE). Education, review clinics and hands-on support are the intended paid offering; no membership is required to use the reader.
 
-The default suite includes 102 real UEBlueprint node exports. The opt-in live suite downloads a public dialogue graph. A private camera-graph acceptance test runs when `BLUEPRINT_ACCEPTANCE_FILE` points to the development sample; private exports are never included in the repository. See [format/provenance](skills/blueprint-reader/references/format.md) for scope and limits. The parser uses the MIT-licensed [UEBlueprint](https://github.com/barsdeveloper/ueblueprint) grammar, pinned at 3.0.0.
+### Live editor field manual
 
-The 0.2 intake update passes 26 tests on macOS/Node 26.10.0, including the private camera sample and live URL. The local page was also exercised with pasted text and the public dialogue graph, including entry tracing. The original parser was validated on macOS with Node 26.10.0 (17 tests including the private three-graph sample and live URL), and independently on Windows with Node 24.20 (four harvested exports, zero parse failures, successful dependency installation and data-volume discovery junction). The Windows inputs comprise two 601-node main-graph exports and 38-node/60-node macro exports. Macro-body warnings on separately supplied graphs are expected; provide the main graph and its macro bodies in one invocation to resolve them. These checks establish static parsing and installation, not Unreal compilation or runtime behavior.
+The following installation options concern the repository's original Unreal editor field manual. The reader's local Node setup is described above.
 
 ### Claude Code
 
@@ -115,6 +112,8 @@ This is a living document. If you discover new UE5 quirks, crash patterns, refle
 
 Especially welcome:
 
+- Blueprint Reader parser fixes, cross-platform installation reports, and small reproducible clipboard fixtures you have permission to share
+
 - New subsystem coverage (Sequencer, Control Rig, PCG, Geometry Script, Animation Blueprint, Sound Cue, Landscape, etc.)
 - Corrections to existing patterns that no longer apply after newer UE5 releases
 - Platform-specific gotchas (Linux editor builds, console targets, macOS)
@@ -128,7 +127,7 @@ Built during real UE5 development sessions using AI agents driving the editor. E
 
 ## License
 
-MIT.
+[MIT](LICENSE) — Copyright (c) 2026 Alex Coulombe Presents. Blueprint Reader includes its own copy of the license so standalone skill installations retain the notice. Third-party packages keep their original licenses; see [reader provenance](skills/blueprint-reader/references/format.md).
 
 ## Support
 
