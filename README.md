@@ -33,7 +33,7 @@ npm ci --ignore-scripts --no-audit --no-fund
 node scripts/install-skill.mjs both
 ```
 
-The installer copies the skill and dependencies into `~/.codex/skills/blueprint-reader` and `~/.claude/skills/blueprint-reader`; use `codex` or `claude` instead of `both` for one client. It refuses to overwrite an existing installation. Start a new chat if the client has cached its skill catalog. Windows/macOS/Linux support plain text and URLs; RTF conversion additionally requires macOS `textutil`.
+On macOS/Linux the installer copies the skill and dependencies into `~/.codex/skills/blueprint-reader` and `~/.claude/skills/blueprint-reader`; use `codex` or `claude` instead of `both` for one client. On Windows, clone and install dependencies on a verified non-system data volume first: the installer creates directory junctions for skill discovery, keeping payloads on that data volume. Keep the source checkout available while those junctions are installed. It refuses to overwrite an existing installation. Start a new chat if the client has cached its skill catalog. Windows/macOS/Linux support plain text and URLs; RTF conversion additionally requires macOS `textutil`.
 
 ```bash
 node scripts/read-blueprint.mjs "https://blueprintue.com/blueprint/6v52d8no/" --brief

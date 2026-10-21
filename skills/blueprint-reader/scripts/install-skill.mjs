@@ -1,7 +1,7 @@
 #!/usr/bin/env node
-import { cp, mkdir, access, rename, rm } from 'node:fs/promises';
+import { cp, mkdir, access, rename, rm, symlink, realpath } from 'node:fs/promises';
 import { homedir } from 'node:os';
-import { join, dirname } from 'node:path';
+import { join, dirname, parse } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const root = fileURLToPath(new URL('../', import.meta.url));
@@ -11,6 +11,8 @@ if (!['codex', 'claude', 'both'].includes(target) || process.argv.length > 3) {
 }
 try {
   await access(join(root, 'node_modules/ueblueprint/package.json'));
+  if (process.platform === 'win32' && parse(await realpath(root)).root.toLowerCase() === `${process.env.SystemDrive || 'C:'}\\`.toLowerCase())
+    throw new Error('Keep the source checkout and dependencies on a verified non-system data volume before installation.');
   const destinations = (target === 'both' ? ['codex', 'claude'] : [target]).map(x => join(homedir(), `.${x}`, 'skills', 'blueprint-reader'));
   for (const destination of destinations) {
     try { await access(destination); throw new Error(`Already installed: ${destination}. Move the old installation aside before updating.`); }
@@ -18,6 +20,11 @@ try {
   }
   for (const destination of destinations) {
     await mkdir(dirname(destination), { recursive: true });
+    if (process.platform === 'win32') {
+      await symlink(root, destination, 'junction');
+      console.log(`Linked ${destination} -> ${root}; keep this data-volume checkout available.`);
+      continue;
+    }
     const staging = `${destination}.install-${process.pid}`;
     try {
       await mkdir(staging);
