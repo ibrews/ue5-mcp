@@ -45,6 +45,8 @@ npm run test:live
 
 The default suite includes 102 real UEBlueprint node exports. The opt-in live suite downloads a public dialogue graph. A private camera-graph acceptance test runs when `BLUEPRINT_ACCEPTANCE_FILE` points to the development sample; private exports are never included in the repository. See [format/provenance](skills/blueprint-reader/references/format.md) for scope and limits. The parser uses the MIT-licensed [UEBlueprint](https://github.com/barsdeveloper/ueblueprint) grammar, pinned at 3.0.0.
 
+Validated on macOS with Node 26.10.0 (all 17 tests, including the private three-graph sample and live URL), and independently on Windows with Node 24.20.0 (four harvested exports, zero parse failures, successful dependency installation and data-volume discovery junction). The Windows inputs comprise two 601-node main-graph exports and 38-node/60-node macro exports. Macro-body warnings on separately supplied graphs are expected; provide the main graph and its macro bodies in one invocation to resolve them. These checks establish static parsing and installation, not Unreal compilation or runtime behavior.
+
 ### Claude Code
 
 ```bash
