@@ -1,6 +1,6 @@
 {
   "name": "@ibrews/blueprint-reader",
-  "version": "0.2.1",
+  "version": "0.2.2",
   "private": true,
   "type": "module",
   "description": "Read BlueprintUE links and Unreal Blueprint clipboard text as connected graphs",

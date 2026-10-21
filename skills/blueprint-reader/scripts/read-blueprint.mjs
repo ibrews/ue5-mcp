@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { Worker } from 'node:worker_threads';
 import { writeFile } from 'node:fs/promises';
-import { pathToFileURL } from 'node:url';
+import { isMainModule } from './entrypoint.mjs';
 import { loadSource, MAX_BYTES } from './sources.mjs';
 import { mergeBundles } from './parser.mjs';
 import { report, mermaid, selectGraphs, selectNode, sliceEntry } from './report.mjs';
@@ -100,6 +100,6 @@ export async function main(args = process.argv.slice(2)) {
   if (options.strict && incomplete) process.exitCode = 2;
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isMainModule(import.meta.url)) {
   main().catch(error => { console.error(`blueprint-reader: ${error.message}`); process.exitCode = 1; });
 }

@@ -2,7 +2,7 @@
 import { createServer } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
-import { pathToFileURL } from 'node:url';
+import { isMainModule } from './entrypoint.mjs';
 import { parseIsolated } from './read-blueprint.mjs';
 import { mergeBundles, MAX_BYTES } from './parser.mjs';
 import { fetchBlueprint } from './sources.mjs';
@@ -88,7 +88,7 @@ export function createReaderServer() {
   });
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (isMainModule(import.meta.url)) {
   const port = Number(process.argv[2] ?? 0);
   if (!Number.isInteger(port) || port < 0 || port > 65535) throw new Error('Supply a port number from 0 to 65535; 0 chooses an available port.');
   const server = createReaderServer();

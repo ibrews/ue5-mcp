@@ -34,6 +34,8 @@ node scripts/install-skill.mjs both
 
 Windows installations use directory junctions: the client discovers the skill in your profile, while the files and dependencies stay in the data-drive checkout. Keep that checkout at the same path. macOS/Linux installations are independent copies.
 
+If your machine has only a system drive and your storage policy permits it, explicitly add `--allow-system-drive` to the install command. The default still requires a non-system Windows drive. This changes only the install location check.
+
 ### Choose your client
 
 | Install command | Skill location |
@@ -43,6 +45,8 @@ Windows installations use directory junctions: the client discovers the skill in
 | `node scripts/install-skill.mjs both` | Both locations above |
 
 `~` means your user profile directory. These locations follow the [Codex local-skill documentation](https://developers.openai.com/codex/skills/) and [Claude Code personal-skill documentation](https://code.claude.com/docs/en/skills). Claude Code's local installation does not install the reader into Cowork or a cloud chat environment.
+
+If `CLAUDE_CONFIG_DIR` is set, the installer uses its `skills/blueprint-reader` directory. Codex continues to use `~/.agents/skills`; the legacy duplicate check also respects `CODEX_HOME`. Version 0.2.2 fixes command startup through Windows junctions and directory symlinks.
 
 ## 2. Try it in Codex or Claude Code
 
