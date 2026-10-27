@@ -2,9 +2,9 @@ name: Blueprint Reader Pages
 on:
   push:
     branches: [main]
-    paths: ['skills/blueprint-reader/**', '.github/workflows/blueprint-reader-pages.yml']
+    paths: ['skills/blueprint-reader/**', 'docs/trailer/**', 'docs/assets/blueprint-reader-trailer*', '.github/workflows/blueprint-reader-pages.yml']
   pull_request:
-    paths: ['skills/blueprint-reader/**', '.github/workflows/blueprint-reader-pages.yml']
+    paths: ['skills/blueprint-reader/**', 'docs/trailer/**', 'docs/assets/blueprint-reader-trailer*', '.github/workflows/blueprint-reader-pages.yml']
   workflow_dispatch:
 permissions:
   contents: read
@@ -28,6 +28,12 @@ jobs:
       - run: npm test
       - run: npm run build:web
       - run: npm run build:helper
+      - name: Include the trailer player and media
+        run: |
+          mkdir -p dist/trailer
+          cp ../../docs/trailer/index.html dist/trailer/index.html
+          cp ../../docs/assets/blueprint-reader-trailer.mp4 dist/trailer/
+          cp ../../docs/assets/blueprint-reader-trailer-poster.jpg dist/trailer/
       - uses: actions/upload-pages-artifact@v3
         if: github.ref == 'refs/heads/main'
         with:

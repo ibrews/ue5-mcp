@@ -6,9 +6,9 @@ Read an Unreal Blueprint without pasting thousands of lines into chat. Start wit
 
 The reader runs locally and never edits your Blueprint assets. You do not need Unreal, an MCP server or an AI API key. The parser, CLI, local page and agent skill are free under the [MIT license](LICENSE).
 
-[![Watch the 42-second Blueprint Reader trailer.](../../docs/assets/blueprint-reader-trailer-poster.jpg)](../../docs/assets/blueprint-reader-trailer.mp4)
+[![Watch the 42-second Blueprint Reader trailer.](../../docs/assets/blueprint-reader-trailer-poster.jpg)](https://ibrews.github.io/ue5-mcp/trailer/)
 
-**[Watch the trailer](../../docs/assets/blueprint-reader-trailer.mp4)** · The Claude story, a real BlueprintUE link, and a compact brief. Captioned, with original music. [Transcript](../../docs/trailer/README.md#transcript).
+**[Watch the trailer](https://ibrews.github.io/ue5-mcp/trailer/)** · The Claude story, a real BlueprintUE link, and a compact brief. Captioned, with original music. [Transcript](../../docs/trailer/README.md#transcript).
 
 **A real example:** [this public 30-node graph](https://blueprintue.com/blueprint/6v52d8no/) produced a 1,336-byte brief from 81,358 bytes of source with reader 0.2.2. This is a summary, not lossless compression or a token-count guarantee. Save the full session and inspect specific nodes when you need more detail.
 

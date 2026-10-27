@@ -4,9 +4,9 @@
 
 **[Try Blueprint Reader in your browser →](https://ibrews.github.io/ue5-mcp/)** No installation or account. Paste raw text, add files, reopen a saved session, or import a BlueprintUE link automatically. Parsing stays in your browser; link imports use our small fetch helper. Pasted text and files are never uploaded.
 
-[![Watch the 42-second Blueprint Reader trailer: the Claude story, a real BlueprintUE import, and a compact brief.](docs/assets/blueprint-reader-trailer-poster.jpg)](docs/assets/blueprint-reader-trailer.mp4)
+[![Watch the 42-second Blueprint Reader trailer: the Claude story, a real BlueprintUE import, and a compact brief.](docs/assets/blueprint-reader-trailer-poster.jpg)](https://ibrews.github.io/ue5-mcp/trailer/)
 
-**[Watch the 42-second trailer](docs/assets/blueprint-reader-trailer.mp4)** · Captioned, with original music; works muted. [Transcript and production notes](docs/trailer/README.md).
+**[Watch the 42-second trailer](https://ibrews.github.io/ue5-mcp/trailer/)** · Captioned, with original music; works muted. [Transcript and production notes](docs/trailer/README.md).
 
 <details>
 <summary>Workflow illustration and example measurements</summary>

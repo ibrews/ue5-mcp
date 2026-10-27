@@ -1,6 +1,6 @@
 # Blueprint Reader trailer
 
-[Watch the 42-second trailer](../assets/blueprint-reader-trailer.mp4) · [Poster](../assets/blueprint-reader-trailer-poster.jpg) · [Try the reader](https://ibrews.github.io/ue5-mcp/)
+[Watch the 42-second trailer](https://ibrews.github.io/ue5-mcp/trailer/) · [Poster](../assets/blueprint-reader-trailer-poster.jpg) · [Try the reader](https://ibrews.github.io/ue5-mcp/)
 
 A captioned 1920 × 1080, 30 fps product trailer for Alex Coulombe Presents. It opens with Alex's story about overloading Claude with raw Blueprint text, then shows a real link becoming a compact brief. All essential information is on screen; the original instrumental score is optional. There is no voiceover.
 
@@ -57,4 +57,4 @@ ffprobe -v error -show_entries format=duration,size:stream=codec_name,width,heig
 ffmpeg -v error -i docs/assets/blueprint-reader-trailer.mp4 -f null -
 ```
 
-The expected result is 42 seconds, 1920 × 1080 H.264 at 30 fps with stereo 48 kHz AAC, and a clean full decode. The README uses a clickable poster because GitHub Markdown does not reliably render an HTML video embed.
+The expected result is 42 seconds, 1920 × 1080 H.264 at 30 fps with stereo 48 kHz AAC, and a clean full decode. The README uses a clickable poster leading to the GitHub Pages player. GitHub's repository file viewer rejected this 3.8 MB MP4 as too large to preview; a repository `.mp4` link is not a reliable playback destination. The Pages workflow copies `index.html`, the MP4 and poster into `dist/trailer/` after building the reader. The player uses native video controls with no JavaScript, autoplay, analytics or external media.

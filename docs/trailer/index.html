@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Watch the 42-second Blueprint Reader trailer: a real BlueprintUE link becomes a compact brief for Codex or Claude.">
+  <meta name="color-scheme" content="light">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'unsafe-inline'; script-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Blueprint Reader — 42-second trailer</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f5f3eb; color: #213733; font: 17px/1.6 system-ui, sans-serif; }
+    main { max-width: 1120px; margin: auto; padding: 40px 24px 56px; }
+    .eyebrow { font-size: 12px; font-weight: 650; letter-spacing: .16em; color: #64746b; }
+    h1 { margin: 14px 0 10px; font: clamp(38px, 6vw, 68px)/1.12 Georgia, serif; }
+    p { max-width: 760px; }
+    video { display: block; width: 100%; aspect-ratio: 16/9; margin: 28px 0; background: #213733; border-radius: 12px; box-shadow: 0 10px 30px #21373316; }
+    nav { display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; margin: 22px 0; }
+    a { color: #2d6056; text-underline-offset: 4px; }
+    a:focus-visible { outline: 3px solid #ac803f; outline-offset: 5px; }
+    .button { display: inline-block; padding: 12px 22px; color: white; background: #2d6056; border-radius: 6px; text-decoration: none; font-weight: 650; }
+    .note { color: #64746b; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <main>
+    <div class="eyebrow">ALEX COULOMBE PRESENTS</div>
+    <h1>Blueprint Reader.</h1>
+    <p>It started with too much raw Blueprint code in a Claude conversation. Here's a smaller way in.</p>
+    <video controls playsinline preload="metadata" poster="blueprint-reader-trailer-poster.jpg" aria-label="Blueprint Reader trailer, 42 seconds, with on-screen captions and original instrumental music">
+      <source src="blueprint-reader-trailer.mp4" type="video/mp4">
+      Your browser cannot play this video. <a href="blueprint-reader-trailer.mp4">Download the MP4</a> or read the transcript below.
+    </video>
+    <nav aria-label="Trailer links">
+      <a class="button" href="../">Try Blueprint Reader →</a>
+      <a href="blueprint-reader-trailer.mp4" download>Download MP4 · 3.8 MB</a>
+      <a href="https://github.com/ibrews/ue5-mcp/blob/main/docs/trailer/README.md#transcript">Read the transcript</a>
+      <a href="https://github.com/ibrews/ue5-mcp">Source on GitHub</a>
+    </nav>
+    <p class="note">42 seconds · Captions on screen · Original music · No voiceover. Actual browser captures, edited for pace. Demo graph: <a href="https://blueprintue.com/blueprint/6v52d8no/">Extended dialogue system by Nicola</a>.</p>
+    <p class="note">The reader is free and MIT licensed. Parsing stays in your browser; BlueprintUE link imports use a fetch helper. The reader makes no AI calls. Briefs summarize and omit detail; keep the full session for follow-up.</p>
+  </main>
+</body>
+</html>
