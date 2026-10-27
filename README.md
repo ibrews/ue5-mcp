@@ -6,7 +6,7 @@
 
 [![Watch the 42-second Blueprint Reader trailer: real Blueprint nodes, the Claude story, a link import, and a compact brief.](docs/assets/blueprint-reader-trailer-poster.jpg)](https://ibrews.github.io/ue5-mcp/trailer/)
 
-**[Watch the 42-second trailer](https://ibrews.github.io/ue5-mcp/trailer/)** · Captioned, with original music; works muted. [Transcript and production notes](docs/trailer/README.md).
+**[Watch the 42-second trailer](https://ibrews.github.io/ue5-mcp/trailer/)** · A visual story of overload → compact brief → focused understanding. Clarifying captions and original music; works muted. [Transcript and production notes](docs/trailer/README.md).
 
 <details>
 <summary>Workflow illustration and example measurements</summary>

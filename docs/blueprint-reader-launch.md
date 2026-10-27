@@ -32,7 +32,7 @@ Blueprint Reader turns Unreal Blueprint exports and BlueprintUE links into small
 
 ## Visuals and evidence
 
-- [42-second trailer](https://ibrews.github.io/ue5-mcp/trailer/): moves through real BlueprintUE nodes, opens with the Claude story, captures the link import and brief-copy actions, then follows the widget connections in the same graph. Captioned with an original instrumental score; works muted. [Poster](assets/blueprint-reader-trailer-poster.jpg), [transcript and rebuild instructions](trailer/README.md).
+- [42-second trailer](https://ibrews.github.io/ue5-mcp/trailer/): opens with the Claude story as source pages overwhelm an illustrated chat, shows an actual BlueprintUE import and Copy action, then follows the real widget connections with a create/store/display animation. The source stays visible as the brief moves into a chat. Clarifying captions and an original instrumental score; works muted. [Poster](assets/blueprint-reader-trailer-poster.jpg), [transcript and rebuild instructions](trailer/README.md).
 - [README / social graphic](assets/blueprint-reader-overview.png): workflow illustration, generated with the built-in image tool. The [generation prompt](assets/blueprint-reader-overview-prompt.txt) is included for reproducibility of the art direction, not a promise of identical pixels.
 - [Real interface screenshot](assets/blueprint-reader-local-ui.png): reader 0.2.2, 2026-10-21, the AI brief tab after ingesting Nicola's public [Extended dialogue system](https://blueprintue.com/blueprint/6v52d8no/).
 - Verified in the local interface: 1 graph, 30 nodes, 107 pins, 38 wires, one missing engine macro body; 81,358 source bytes and 1,336 UTF-8 brief bytes. No private project export is shown.
