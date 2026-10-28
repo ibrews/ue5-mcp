@@ -1,15 +1,6 @@
 import { Parser } from 'htmlparser2';
 import { decodeHTML } from 'entities';
-
-export function blueprintURL(input) {
-  const url = new URL(input);
-  if (url.protocol !== 'https:' || !['blueprintue.com', 'www.blueprintue.com'].includes(url.hostname) ||
-      url.port || url.username || url.password || !/^\/(?:blueprint|render)\/[\w-]+\/?$/.test(url.pathname)) {
-    throw new Error('Expected an HTTPS blueprintue.com/blueprint/<id>/ or /render/<id>/ URL.');
-  }
-  url.search = ''; url.hash = '';
-  return url;
-}
+export { blueprintURL } from '../assets/source-input.js';
 
 export function extractHTML(html) {
   let active = false, inTitle = false, title = '', text = '', ueVersion = null;

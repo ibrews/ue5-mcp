@@ -15,7 +15,8 @@
         <label class="file-zone" for="source-files"><span>Add text files or a saved session</span><small>Main graph + macros · .txt, .md, .bp-session.json</small><input id="source-files" type="file" accept=".txt,.md,.json,.text" multiple></label>
         <div class="file-info"><span id="file-status">No files selected</span><button id="clear-files" type="button" hidden>Clear</button></div>
         <label for="budget">AI brief size</label><select id="budget"><option value="4000">Short · up to 4 KB</option><option value="8000" selected>Balanced · up to 8 KB</option><option value="16000">Detailed · up to 16 KB</option></select>
-        <button class="primary analyze" id="analyze" type="submit">Read Blueprint <span aria-hidden="true">↗</span></button>
+        <button class="primary analyze" id="analyze" type="submit" disabled aria-describedby="input-hint">Read Blueprint <span aria-hidden="true">↗</span></button>
+        <p id="input-hint" class="hint" aria-live="polite">Add Blueprint text, files or a BlueprintUE link to continue.</p>
         <p class="privacy">No AI API key. No Blueprint uploads. Pasted text stays in this local session; links contact BlueprintUE.</p>
         <p id="status" class="status" role="status" aria-live="polite"></p>
       </form>

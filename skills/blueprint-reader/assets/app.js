@@ -1,12 +1,60 @@
+import { inputProblem, INPUT_LIMIT } from './source-input.js';
+
 export function startApp(api) {
 const $ = id => document.getElementById(id);
-let mode = 'paste', result = null;
+let mode = 'paste', result = null, busy = false, revision = 0, readyBody = null, readinessTimer;
+const fileReads = new WeakMap();
 const bytes = n => new Intl.NumberFormat(undefined, { maximumFractionDigits: 1 }).format(n / 1024) + ' KB';
 function status(text, error = false) { $('status').textContent = text; $('status').classList.toggle('error', error); }
+function updateButton() {
+  $('analyze').disabled = busy || !readyBody;
+  $('analyze').setAttribute('aria-busy', String(busy));
+}
+async function readFile(file) {
+  if (!fileReads.has(file)) fileReads.set(file, (async () => {
+    const raw = new Uint8Array(await file.arrayBuffer());
+    const encoding = raw[0] === 255 && raw[1] === 254 ? 'utf-16le' : raw[0] === 254 && raw[1] === 255 ? 'utf-16be' : 'utf-8';
+    const text = new TextDecoder(encoding, { fatal: true }).decode(raw);
+    return file.name.toLowerCase().endsWith('.json') ? { session: JSON.parse(text) } : { name: file.name, text };
+  })());
+  return fileReads.get(file);
+}
+async function checkInput() {
+  clearTimeout(readinessTimer);
+  const current = ++revision;
+  readyBody = null; updateButton();
+  const body = { text: mode === 'paste' || (api.browser && !api.automaticLinks) ? $('source-text').value : '',
+    url: mode === 'link' ? $('source-url').value.trim() : '', files: [] };
+  const chosen = [...$('source-files').files];
+  let problem;
+  try {
+    if (chosen.length > 100 || chosen.reduce((n, f) => n + f.size, 0) > INPUT_LIMIT) {
+      throw new Error('Use at most 100 files totaling 32 MiB.');
+    }
+    if (chosen.length) $('input-hint').textContent = 'Checking selected files…';
+    body.files = await Promise.all(chosen.map(readFile));
+    problem = inputProblem(body);
+  } catch (error) { problem = 'Cannot read this input. ' + error.message; }
+  // Clearing/changing files or switching modes must invalidate slower file reads.
+  if (current !== revision) return false;
+  readyBody = problem ? null : body;
+  $('input-hint').textContent = problem || 'Ready to read.';
+  updateButton();
+  return Boolean(readyBody);
+}
+function inputChanged() {
+  ++revision; readyBody = null; updateButton();
+  clearTimeout(readinessTimer);
+  readinessTimer = setTimeout(checkInput, 150);
+}
+$('source-text').addEventListener('input', inputChanged);
+$('source-url').addEventListener('input', inputChanged);
 function setMode(value) {
   mode = value;
   $('paste-input').hidden = value !== 'paste' && (!api.browser || api.automaticLinks); $('link-input').hidden = value !== 'link';
   $('paste-mode').setAttribute('aria-pressed', value === 'paste'); $('link-mode').setAttribute('aria-pressed', value === 'link');
+  $('source-url').disabled = value !== 'link';
+  checkInput();
 }
 $('paste-mode').addEventListener('click', () => setMode('paste'));
 $('link-mode').addEventListener('click', () => setMode('link'));
@@ -14,6 +62,7 @@ function fileStatus() {
   const files = [...$('source-files').files];
   $('file-status').textContent = files.length ? files.map(f => f.name).join(', ') : 'No files selected';
   $('clear-files').hidden = !files.length;
+  checkInput();
 }
 $('source-files').addEventListener('change', fileStatus);
 $('clear-files').addEventListener('click', () => { $('source-files').value = ''; fileStatus(); });
@@ -78,22 +127,14 @@ function render(data) {
   graphChanged(); showView('tips'); $('trace-text').textContent = 'Select an entry or a node to inspect its connections.';
 }
 $('ingest-form').addEventListener('submit', async event => {
-  event.preventDefault(); $('analyze').disabled = true; status('Reading the graph and checking connections…');
+  event.preventDefault();
+  if (busy || !await checkInput()) return;
+  busy = true; updateButton(); status('Reading the graph and checking connections…');
+  const body = { ...readyBody, budget: Number($('budget').value) };
   try {
-    const chosen = [...$('source-files').files];
-    if (chosen.length > 100 || chosen.reduce((n, f) => n + f.size, 0) > 32 * 1024 * 1024) throw new Error('Use at most 100 files totaling 32 MiB; split larger inputs.');
-    const files = [];
-    for (const file of $('source-files').files) {
-      if (file.size > 32 * 1024 * 1024) throw new Error('A file exceeds 32 MiB. Split it by graph.');
-      const raw = new Uint8Array(await file.arrayBuffer());
-      const encoding = raw[0] === 255 && raw[1] === 254 ? 'utf-16le' : raw[0] === 254 && raw[1] === 255 ? 'utf-16be' : 'utf-8';
-      const text = new TextDecoder(encoding, { fatal: true }).decode(raw);
-      if (file.name.endsWith('.json')) files.push({ session: JSON.parse(text) }); else files.push({ name: file.name, text });
-    }
-    const body = { budget: Number($('budget').value), files, text: mode === 'paste' || (api.browser && !api.automaticLinks) ? $('source-text').value : '', url: mode === 'link' ? $('source-url').value.trim() : '' };
     const data = await api.ingest(body);
     render(data); status('Ready. Save the session for follow-up questions; copy only the brief into chat.');
-  } catch (error) { status(error.message, true); } finally { $('analyze').disabled = false; }
+  } catch (error) { status(error.message, true); } finally { busy = false; checkInput(); }
 });
 $('copy-brief').addEventListener('click', async () => {
   try { await navigator.clipboard.writeText(result.brief); $('copy-brief').textContent = 'Copied'; setTimeout(() => { $('copy-brief').textContent = 'Copy AI brief'; }, 1800); }
@@ -112,4 +153,5 @@ for (const kind of ['brief', 'session', 'analysis']) $('download-' + kind).addEv
     setTimeout(() => URL.revokeObjectURL(url), 60000);
   } catch (error) { status(error.message, true); }
 });
+setMode('paste');
 }
