@@ -10,6 +10,8 @@ The reader runs locally and never edits your Blueprint assets. You do not need U
 
 **[Watch the trailer](https://ibrews.github.io/ue5-mcp/trailer/)** · Real nodes and an actual link import, with motion showing source overload → compact brief → focused inspection. Clarifying captions and original music. [Transcript](../../docs/trailer/README.md#transcript).
 
+Sharing the reader or trailer URL uses the custom social card. Both pages include the matching favicon; [brand assets and provenance](assets/branding/README.md) are included in the repository.
+
 **A real example:** [this public 30-node graph](https://blueprintue.com/blueprint/6v52d8no/) produced a 1,336-byte brief from 81,358 bytes of source with reader 0.2.2. This is a summary, not lossless compression or a token-count guarantee. Save the full session and inspect specific nodes when you need more detail.
 
 ## Try it without installing anything

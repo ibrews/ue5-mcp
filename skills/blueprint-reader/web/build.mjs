@@ -21,6 +21,26 @@ let html = await readFile(join(root, 'assets/index.html'), 'utf8');
 const replace = (a, b) => { if (!html.includes(a)) throw new Error('Web template marker changed: ' + a); html = html.replace(a, b); };
 replace('<title>', '<meta name="referrer" content="no-referrer"><meta http-equiv="Content-Security-Policy" content="default-src \'self\'; script-src \'self\'; style-src \'self\'; worker-src \'self\'; connect-src ' + new URL(FETCH_HELPER).origin + '; img-src \'self\' data:; object-src \'none\'; base-uri \'none\'; form-action \'none\'"><meta name="description" content="Read Unreal Blueprint exports in your browser. Get a compact AI brief, improvement tips and node evidence. Free and MIT licensed."><title>');
 replace('href="/app.css"', 'href="./app.css"');
+const brandFiles = ['favicon.ico', 'favicon.svg', 'favicon-32.png', 'apple-touch-icon.png', 'social-card.png'];
+for (const file of brandFiles.filter(file => file !== 'social-card.png')) replace(`href="/${file}"`, `href="./${file}"`);
+replace('src="/favicon.svg"', 'src="./favicon.svg"');
+replace('</head>', `<link rel="canonical" href="https://ibrews.github.io/ue5-mcp/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Blueprint Reader">
+<meta property="og:title" content="Blueprint Reader — Understand the graph. Keep the context small.">
+<meta property="og:description" content="Turn Unreal Blueprint text or a BlueprintUE link into a compact brief for Codex or Claude. Free and open source. Parsing stays in your browser.">
+<meta property="og:url" content="https://ibrews.github.io/ue5-mcp/">
+<meta property="og:image" content="https://ibrews.github.io/ue5-mcp/social-card.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1730">
+<meta property="og:image:height" content="909">
+<meta property="og:image:alt" content="Blueprint Reader: connected nodes under a reading lens become a compact report. Alex Coulombe Presents.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Blueprint Reader">
+<meta name="twitter:description" content="Understand the graph. Keep the context small. Free, open source, in your browser.">
+<meta name="twitter:image" content="https://ibrews.github.io/ue5-mcp/social-card.png">
+<meta name="twitter:image:alt" content="Blueprint Reader: connected nodes under a reading lens become a compact report. Alex Coulombe Presents.">
+</head>`);
 replace('src="/local-app.js"', 'src="./app.js"');
 replace('href="/" class="brand"', 'href="./" class="brand"');
 replace('Runs on your computer', 'Parsing stays in your browser');
@@ -34,6 +54,7 @@ replace('BLUEPRINT READER <span>', 'BLUEPRINT READER <a href="https://github.com
 await writeFile(join(out, 'index.html'), html);
 await writeFile(join(out, '.nojekyll'), '');
 await copyFile(join(root, 'assets/app.css'), join(out, 'app.css'));
+for (const file of brandFiles) await copyFile(join(root, 'assets/branding', file), join(out, file));
 await copyFile(join(root, 'LICENSE'), join(out, 'LICENSE.txt'));
 let notices = 'Blueprint Reader is MIT licensed. See LICENSE.txt.\n\n';
 for (const name of ['ueblueprint', 'parsernostrum', '@lit/reactive-element', 'lit-html', 'htmlparser2', 'entities', 'domhandler', 'domutils', 'dom-serializer', 'domelementtype']) {

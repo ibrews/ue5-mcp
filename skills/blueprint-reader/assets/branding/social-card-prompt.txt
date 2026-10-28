@@ -1,0 +1,8 @@
+Use case: ads-marketing
+Asset type: Blueprint Reader social preview card, landscape 1200 x 630 pixels (approximately 1.905:1); design for legibility at small link-preview size.
+Primary request: Create a beautiful, restrained editorial software launch card. This is a new card, not a reproduction of the reference.
+Input image 1: style reference only, the existing Blueprint Reader README illustration. Keep its warm ivory paper, dark ink, deep forest-green, subtle sage, and very sparing amber. Use simpler composition and far less text.
+Composition: generous safe margins. On the left, a large confident serif title on two lines: "Blueprint" then "Reader". Beneath, clear smaller sans-serif text exactly: "Understand the graph." then "Keep the context small." On the right, one striking explanatory illustration: a small cluster of three clearly connected Blueprint-style node cards, with their thin wires converging into one compact ivory report sheet. An elegant circular reading lens passes over the node cluster. Use abstract lines/pins inside nodes, no invented node names and no fake app screenshot. Keep the full source represented behind the small report, not destroyed.
+Top left small credit exactly: "ALEX COULOMBE PRESENTS"
+Bottom left small but readable line exactly: "Free · Open source · In your browser"
+The image should feel like the cover of a beautifully designed technical field guide: crisp typesetting, subtle paper, one restrained grid behind the illustration, tactile precise linework, calm confident composition. No gradient blobs, neon, robots, emojis, extra logos, watermarks, counters, tiny explanatory labels, captions or additional wording. Text is spelled exactly. Large title must remain readable as a small social preview. Opaque background.

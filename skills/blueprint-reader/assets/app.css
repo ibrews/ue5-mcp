@@ -2,3 +2,4 @@
 /* Readiness uses a neutral state, including hover; green means an input is ready. */
 .analyze:disabled,.analyze:disabled:hover{background:var(--wash);border-color:var(--line);color:var(--muted);opacity:1;cursor:not-allowed}
 .analyze[aria-busy=true]{cursor:wait}
+.brand .mark{vertical-align:middle}
