@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta
+      name="description"
+      content="Follow a real Unreal Blueprint from create to store to display. A free, interactive Blueprint Reader field guide from Alex Coulombe Presents."
+    />
+    <meta name="theme-color" content="#142f2e" />
+    <meta name="referrer" content="no-referrer" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'"
+    />
+    <title>Follow the wires — Blueprint Reader</title>
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="./guide.css" />
+    <script type="module" src="../guide.js"></script>
+  </head>
+  <body>
+    <a class="skip" href="#walkthrough">Skip to the walkthrough</a>
+    <header class="masthead">
+      <a class="brand" href="../"
+        ><img src="../favicon.svg" width="30" height="30" alt="" />Blueprint
+        Reader</a
+      ><span class="edition">FIELD NOTES / 001</span
+      ><a class="reader-link" href="../"
+        >Open the reader <span aria-hidden="true">↗</span></a
+      >
+    </header>
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div class="intro-copy">
+          <p class="eyebrow">AN INTERACTIVE FIELD GUIDE</p>
+          <h1 id="page-title">
+            A whole graph.<br /><em>One useful question.</em>
+          </h1>
+          <p class="lead">
+            Follow the wires from a widget’s creation to its place on screen.
+            Then give your AI the evidence it needs.
+          </p>
+          <a class="start" href="#walkthrough"
+            >Follow the three nodes <span aria-hidden="true">↓</span></a
+          ><span class="duration">About 2 minutes · No setup</span>
+        </div>
+        <figure class="overview">
+          <img
+            src="./graph-wide.png"
+            width="1920"
+            height="1200"
+            alt="Nicola’s actual dialogue Blueprint, with connected functions and several branches."
+          />
+          <figcaption>
+            <span class="source-dot"></span> A real Blueprint. A smaller
+            question.<a
+              href="https://blueprintue.com/blueprint/6v52d8no/"
+              target="_blank"
+              rel="noopener noreferrer"
+              >Nicola / Extended dialogue system ↗</a
+            >
+          </figcaption>
+          <div class="stats" aria-label="Full graph statistics">
+            <span><b data-stat="nodes">30</b>nodes</span
+            ><span><b data-stat="pins">107</b>pins</span
+            ><span><b>3</b>in our focus</span>
+          </div>
+        </figure>
+      </section>
+
+      <section
+        id="walkthrough"
+        class="walkthrough"
+        aria-label="Guided graph investigation"
+      >
+        <nav class="steps" aria-label="Walkthrough steps">
+          <button type="button" data-step="0" aria-current="step">
+            <span>01</span>The question</button
+          ><button type="button" data-step="1"><span>02</span>Create</button
+          ><button type="button" data-step="2"><span>03</span>Store</button
+          ><button type="button" data-step="3"><span>04</span>Display</button
+          ><button type="button" data-step="4">
+            <span>05</span>Ask better
+          </button>
+        </nav>
+        <div class="lesson">
+          <div class="visual">
+            <div class="visual-heading">
+              <span class="eyebrow">THE CONNECTED SLICE</span>
+              <div class="view-switch" role="group" aria-label="Graph view">
+                <button type="button" id="view-diagram" aria-pressed="true">
+                  Readable view</button
+                ><button type="button" id="view-original" aria-pressed="false">
+                  Original capture
+                </button>
+              </div>
+            </div>
+            <div
+              id="diagram"
+              class="diagram"
+              aria-label="Three nodes connected by execution and object-reference wires"
+            >
+              <svg class="wires" aria-hidden="true"></svg>
+              <button type="button" class="node create" data-node="0">
+                <span class="node-kicker">01 / CREATE</span
+                ><strong>Create Widget</strong
+                ><span class="pin exec"
+                  ><i></i>execute
+                  <span
+                    >then
+                    <i data-pin="K2Node_CreateWidget_1.then"></i></span></span
+                ><span class="pin data"
+                  ><i></i>Class
+                  <span
+                    >Return Value
+                    <i
+                      data-pin="K2Node_CreateWidget_1.ReturnValue"
+                    ></i></span></span
+                ><span class="node-value">UI_HIRED_C</span>
+              </button>
+              <button type="button" class="node store" data-node="1">
+                <span class="node-kicker">02 / STORE</span
+                ><strong>Set Hired</strong
+                ><span class="pin exec"
+                  ><i data-pin="K2Node_VariableSet_5.execute"></i>execute
+                  <span
+                    >then
+                    <i data-pin="K2Node_VariableSet_5.then"></i></span></span
+                ><span class="pin data"
+                  ><i data-pin="K2Node_VariableSet_5.Hired"></i>Hired
+                  <span
+                    >Output_Get
+                    <i
+                      data-pin="K2Node_VariableSet_5.Output_Get"
+                    ></i></span></span
+                ><span class="node-value">object reference</span>
+              </button>
+              <button type="button" class="node display" data-node="2">
+                <span class="node-kicker">03 / DISPLAY</span
+                ><strong>Add to Viewport</strong
+                ><span class="pin exec"
+                  ><i data-pin="K2Node_CallFunction_6.execute"></i>execute
+                  <span>then <i></i></span></span
+                ><span class="pin data"
+                  ><i data-pin="K2Node_CallFunction_6.self"></i>Target
+                  <span class="pin-detail">self</span></span
+                ><span class="node-value">Z Order · 0</span>
+              </button>
+            </div>
+            <figure id="original" class="original" hidden>
+              <div class="capture">
+                <img
+                  src="./graph-ui-chain.png"
+                  width="1920"
+                  height="1200"
+                  alt="Actual BlueprintUE capture: Create UI HIRED C Widget connects to Set Hired and Add to Viewport. White execution wires and blue object wires connect them."
+                /><span class="capture-focus" aria-hidden="true"></span>
+              </div>
+              <figcaption>
+                Actual BlueprintUE capture, 27 October 2026. Highlight is an
+                editorial overlay.
+                <a
+                  href="./graph-ui-chain.png"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  >Open full-size capture ↗</a
+                >
+              </figcaption>
+            </figure>
+            <div class="legend">
+              <span><i class="exec-swatch"></i>Execution connection</span
+              ><span><i class="data-swatch"></i>Object reference</span>
+            </div>
+            <p class="diagram-note" id="diagram-note">
+              A readable reconstruction of exported pins. Select a node to
+              inspect it. These connections are static evidence, not a running
+              simulation.
+            </p>
+            <div class="evidence-panel">
+              <div class="evidence-heading">
+                <h2>What the pins say</h2>
+                <span id="evidence-count">4 verified connections</span>
+              </div>
+              <div id="connections" class="connections"></div>
+              <details id="pin-details">
+                <summary>Exact node IDs and pin details</summary>
+                <pre id="pin-text" tabindex="0"></pre>
+              </details>
+            </div>
+          </div>
+          <div class="narrative">
+            <p class="lesson-index" id="lesson-index">01 / 05</p>
+            <div id="step-copy">
+              <h2 id="step-title">Which widget reaches the screen?</h2>
+              <p id="step-text">
+                A large Blueprint is easier to investigate when you start with
+                one question.
+              </p>
+            </div>
+            <div class="takeaway">
+              <span>THE USEFUL DISTINCTION</span>
+              <p id="takeaway"></p>
+            </div>
+            <p class="quiet" id="static-note">
+              The full graph includes other branches and an unavailable
+              ForEachLoop macro body. This slice answers one question.
+            </p>
+            <div class="lesson-controls">
+              <button type="button" id="previous" aria-label="Previous step">
+                ←</button
+              ><span id="progress" aria-live="polite" aria-atomic="true"
+                >Step 1 of 5</span
+              ><button type="button" id="next">
+                Next <span aria-hidden="true">→</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="handoff" id="handoff" aria-labelledby="handoff-title">
+        <div>
+          <p class="eyebrow">FROM READING TO REASONING</p>
+          <h2 id="handoff-title">
+            A better starting point<br /><em>for your AI assistant.</em>
+          </h2>
+          <p>
+            The prompt includes the reader’s actual brief, the four connections
+            above, and a focused follow-up. Copy it into Codex, Claude, or your
+            preferred assistant.
+          </p>
+          <div class="handoff-actions">
+            <button type="button" class="start" id="copy-prompt">
+              Copy the evidence + prompt
+              <span aria-hidden="true">↗</span></button
+            ><button type="button" class="text-button" id="save-prompt">
+              Save as text
+            </button>
+          </div>
+          <p
+            id="copy-status"
+            class="copy-status"
+            role="status"
+            aria-live="polite"
+          ></p>
+          <a class="import-link" href="../?example=dialogue"
+            >Open this example in the reader →</a
+          >
+          <p class="quiet">
+            That opens the source URL for you to import. This guide itself makes
+            no network or AI calls.
+          </p>
+        </div>
+        <div class="prompt-card">
+          <span class="prompt-label">THE NEXT QUESTION</span>
+          <blockquote>
+            “If this path runs twice, what should I inspect to find out whether
+            two widgets can be created?”
+          </blockquote>
+          <div class="prompt-includes">
+            <span>01 <b>Ask one question</b></span
+            ><span>02 <b>Attach the relevant evidence</b></span
+            ><span>03 <b>Name what still needs a test</b></span>
+          </div>
+          <details>
+            <summary>Read the full prompt before copying</summary>
+            <label class="sr-only" for="prompt-text"
+              >Full evidence and prompt</label
+            ><textarea
+              id="prompt-text"
+              readonly
+              rows="12"
+              spellcheck="false"
+            ></textarea>
+          </details>
+        </div>
+      </section>
+      <section class="provenance" aria-label="Evidence and attribution">
+        <p>
+          <strong>About this example.</strong> The Blueprint is
+          <a
+            href="https://blueprintue.com/blueprint/6v52d8no/"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Extended dialogue system by Nicola</a
+          >. Captures and a limited, parser-derived evidence excerpt are used
+          for explanation; the original Blueprint remains its author’s work. The
+          full source is not included.
+        </p>
+        <p>
+          Evidence rechecked <time datetime="2026-10-29">29 October 2026</time>.
+          The compact brief omits detail. Reading exported wiring does not
+          compile a Blueprint, reveal missing widget assets, or prove runtime
+          behavior.
+          <a
+            href="https://github.com/ibrews/ue5-mcp/blob/main/skills/blueprint-reader/references/guided-example.md"
+            target="_blank"
+            rel="noopener noreferrer"
+            >Evidence and method ↗</a
+          >
+        </p>
+      </section>
+    </main>
+    <footer>
+      <a class="brand" href="../">Blueprint Reader</a
+      ><span
+        >Free core. Open source.
+        <a
+          href="https://alexcoulombepresents.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          >Alex Coulombe Presents ↗</a
+        ></span
+      >
+    </footer>
+    <noscript
+      ><p class="no-script">
+        The static graph and explanation are available above. Enable JavaScript
+        for the guided steps and copyable prompt, or
+        <a href="https://blueprintue.com/blueprint/6v52d8no/"
+          >open the original Blueprint</a
+        >.
+      </p></noscript
+    >
+  </body>
+</html>
