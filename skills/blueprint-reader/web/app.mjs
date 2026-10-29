@@ -16,3 +16,11 @@ $('try-example').addEventListener('click', () => {
   $('paste-mode').click(); $('source-text').value = example; $('clear-files').click();
   $('ingest-form').requestSubmit();
 });
+// A guide link pre-fills this known public source. Import still needs an explicit
+// user action; arbitrary query parameters never trigger network requests.
+if (new URLSearchParams(location.search).get('example') === 'dialogue') {
+  $('link-mode').click();
+  $('source-url').value = 'https://blueprintue.com/blueprint/6v52d8no/';
+  $('source-url').dispatchEvent(new Event('input', { bubbles: true }));
+  $('status').textContent = 'Guided example selected. Click Read Blueprint to fetch the public source and inspect it.';
+}

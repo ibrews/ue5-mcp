@@ -16,6 +16,8 @@ Sharing the reader or trailer URL uses the custom social card. Both pages includ
 
 ## Try it without installing anything
 
+The browser build also includes **Follow a real graph**, a [guided example](references/guided-example.md) at `/guide/`. Select the Create, Store and Display nodes, compare the original BlueprintUE capture, then copy or save a prompt with the brief and exact connections. The guide works from a checked evidence snapshot without fetching the source; opening the example in the reader requires an explicit import.
+
 Open the [live browser edition](https://ibrews.github.io/ue5-mcp/) and click **Try a sample graph**, or paste your own Blueprint clipboard text. **Read Blueprint** stays neutral and disabled until the active input contains recognizable complete Blueprint text, a valid BlueprintUE link, or supported files/session contents. It turns green when ready; full syntax checking happens when you read the graph. You can also add text files and macros, reopen a `.bp-session.json`, inspect exact nodes and entry paths, and download the brief, findings or full session.
 
 **BlueprintUE links:** choose **BlueprintUE link**, paste a public or unlisted URL, and click **Read Blueprint**. Our fetch helper retrieves the export automatically; your browser parses it and produces the report. The source URL stays with the saved session. If a link is private, expired, blocked, or too large, use **Open BlueprintUE**, copy its **Code to copy** text, then choose **Use copied text instead**.

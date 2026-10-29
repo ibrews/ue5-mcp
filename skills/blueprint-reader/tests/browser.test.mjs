@@ -14,6 +14,9 @@ import { fileURLToPath } from 'node:url';
 test('the shipped browser bundle starts without a DOM and parses in a worker', { timeout: 15000 }, async t => {
   const built = spawnSync(process.execPath, [fileURLToPath(new URL('../web/build.mjs', import.meta.url))], { encoding: 'utf8' });
   assert.equal(built.status, 0, built.stderr);
+  // Node can resolve this import, masking the browser worker's unhandled
+  // rejection. The browser-only alias must keep it out of the shipped bundle.
+  assert.doesNotMatch(await readFile(new URL('../dist/worker.js', import.meta.url), 'utf8'), /import\(["'](?:node:)?crypto["']\)/);
   const url = new URL('../dist/worker.js', import.meta.url).href;
   const worker = new Worker(`const { parentPort } = require('node:worker_threads');
     globalThis.self = globalThis;

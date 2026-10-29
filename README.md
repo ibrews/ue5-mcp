@@ -8,6 +8,8 @@
 
 **[Watch the 42-second trailer](https://ibrews.github.io/ue5-mcp/trailer/)** · A visual story of overload → compact brief → focused understanding. Clarifying captions and original music; works muted. [Transcript and production notes](docs/trailer/README.md).
 
+**[Follow the wires: interactive guide](skills/blueprint-reader/references/guided-example.md).** The browser build includes a five-step walkthrough at `/guide/`: inspect a real Create Widget → Set Hired → AddToViewport chain, compare the original capture, and copy a focused question with its exact pin evidence.
+
 <details>
 <summary>Workflow illustration and example measurements</summary>
 

@@ -9,6 +9,7 @@ Live site: **https://ibrews.github.io/ue5-mcp/**. Version 0.3.0 introduced the s
 - `web/engine.mjs` uses Web Crypto for SHA-256, the same UEBlueprint grammar and the same reporting code. Original text stays in tab memory. Downloads are local blobs; reopening a session reparses its source.
 - Each new import gets a candidate worker. Only success replaces the accepted worker; syntax errors and the 45-second timeout preserve the previous result. Input is capped at 32 MiB decoded text, 100 sources and the parser's structural limits. Browsers do not provide the Node worker's hard heap cap; split unusually complex inputs if the browser runs low on memory.
 - The grammar imports Lit's CSS and HTML template values for colors/icons. Importing Lit's full browser barrel attempts to initialize `HTMLElement`, which is absent in workers. The build uses the actual CSS tag and Lit HTML's DOM-free SSR entry, without rendering. A bundled-worker test catches this failure before deployment.
+- UEBlueprint's GUID helper mistakes workers for Node when `window` is absent and tries `import('crypto')`. The browser build aliases that import to native `globalThis.crypto`; Node/CLI imports are unchanged. A bundle regression check prevents a bare Node crypto import from reaching browsers.
 
 ## BlueprintUE links and privacy
 
