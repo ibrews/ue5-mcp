@@ -7,6 +7,8 @@
 Native editor graphs are supported too: save a complete `dump_blueprint_graph`
 result as JSON and feed it into the same brief and inspection workflow. See
 [native graph imports and paired comparisons](skills/blueprint-reader/references/editor-integration.md).
+Checked against four real Blueprints loaded in UE 5.8.4: 170 nodes and 136 wires
+match their paired clipboard exports. [Validation scope and results](skills/blueprint-reader/references/native-validation.md).
 
 [![Watch the 42-second Blueprint Reader trailer: real Blueprint nodes, the Claude story, a link import, and a compact brief.](docs/assets/blueprint-reader-trailer-poster.jpg)](https://ibrews.github.io/ue5-mcp/trailer/)
 

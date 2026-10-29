@@ -26,7 +26,7 @@ export function nativeGraphs(text) {
         export_path: n.node_path || null, source: { format: 'ecabridge-json', graph: g.name },
         properties: {}, user_defined_pins: [], raw: JSON.stringify(n, null, 2),
         pins: n.pins.map(p => ({
-          id: pinId(p), name: p.internal_name ?? p.name, direction: p.direction.toLowerCase(),
+          id: pinId(p), name: (p.internal_name ?? p.name) === 'None' ? '' : (p.internal_name ?? p.name), direction: p.direction.toLowerCase(),
           type: { category: p.type, subcategory: p.sub_type || '', object: p.sub_type_object ?? null,
             container: p.container ?? (modern ? 'None' : null), reference: p.is_reference ?? null, const: p.is_const ?? null },
           default_value: p.default_value ?? null, default_object: p.default_object ?? null, default_text: p.default_text ?? null,

@@ -28,9 +28,16 @@ are included in the report. To compare against a saved binary too, begin with an
 already saved asset, record its hash before/after, and require a clean package.
 Keep private source assets and captured dumps local.
 
+An unnamed Unreal `FName` is normalized from native `None` to the omitted
+clipboard name. Matching orphaned pins retain their warning without causing a
+parity failure; different orphaned flags or unresolved links still fail. See
+[real graph validation](native-validation.md).
+
 `diff_blueprints` with the GUID identity fix preserves repeated nodes; it no
 longer guesses correspondence between unrelated assets from matching display
 titles. Check `identity_scheme` and `identity_warnings` before interpreting a diff.
+Duplicating an asset can regenerate GUIDs; use identity-preserving revisions for
+a revision comparison.
 
 For a requested edit: preserve the current asset, inspect exact node/pin IDs, identify affected callers and macro bodies, apply the smallest supported mutation, compile, save, then read back/diff and test the relevant event in Unreal. Confirm replication/authority and latent semantics in the live project when applicable. A topology check does not establish runtime behavior.
 

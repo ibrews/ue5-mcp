@@ -38,6 +38,11 @@ not proof of saved `.uasset` parity or runtime correctness. Native node `--forma
 raw` output is JSON and cannot be pasted back into Unreal. See
 [the editor workflow](references/editor-integration.md).
 
+Validated on four real Blueprints loaded in UE 5.8.4: 8 graphs, 170 nodes, 551
+pins and 136 wires match their paired clipboard exports. Graph defects remain
+visible even when both representations agree. See [validation results and
+limits](references/native-validation.md).
+
 ## 1. Install once
 
 You need **Git** and **Node.js 20 or newer** (`node --version`). The commands below install the same reader for Codex and Claude Code. Run them in your terminal, not inside a chat message.

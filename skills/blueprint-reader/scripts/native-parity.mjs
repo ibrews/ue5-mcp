@@ -32,8 +32,11 @@ export function compareNativeClipboard(text) {
     const a = topology(native.graphs[i]), b = topology(clipboard.graphs[0]);
     const differences = Object.keys(a).filter(k => JSON.stringify(a[k]) !== JSON.stringify(b[k]));
     const topologyWarnings = [...native.graphs[i].warnings, ...clipboard.graphs[0].warnings];
+    // Orphaned pins are graph defects, but matching orphaned flags are still
+    // comparable evidence. Keep the warning without calling it a mismatch.
+    const blockingWarnings = topologyWarnings.filter(w => w.code !== 'orphaned_pin');
     return { name: g.name, nodes: a.nodes.length, pins: a.nodes.reduce((s, n) => s + n.pins.length, 0),
-      wires: a.wires.length, equal: !differences.length && !topologyWarnings.length, differences, topology_warnings: topologyWarnings };
+      wires: a.wires.length, equal: !differences.length && !blockingWarnings.length, differences, topology_warnings: topologyWarnings };
   });
   return { schema_version: 1, engine_version: dump.engine_version ?? null, package_dirty: dump.package_dirty ?? null,
     source_sha256: native.sources[0].sha256, equal: graphs.every(g => g.equal), graphs,

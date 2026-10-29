@@ -82,3 +82,15 @@ test('native paired comparison detects a missing wire and missing clipboard evid
   delete dump.graphs[0].clipboard_text;
   assert.throws(() => compareNativeClipboard(JSON.stringify(dump)), /Missing clipboard_text/);
 });
+
+test('FName None matches an omitted clipboard name and orphan warnings survive parity', () => {
+  const dump = fixture(), g = dump.graphs[0];
+  g.nodes = [g.nodes[0]]; g.node_count = 1; g.connection_count = 0;
+  g.nodes[0].pins = [pin(10, 'execute', 'Input', [], { internal_name: 'None', is_orphaned: true })];
+  g.clipboard_text = `Begin Object Class=/Script/BlueprintGraph.K2Node_Event Name="Event_0"\n NodeGuid=${id(1)}\n CustomProperties Pin (PinId=${id(10)},PinType.PinCategory="exec",bOrphanedPin=True)\nEnd Object`;
+  const result = compareNativeClipboard(JSON.stringify(dump));
+  assert.equal(result.equal, true);
+  assert.ok(result.graphs[0].topology_warnings.some(w => w.code === 'orphaned_pin'));
+  g.nodes[0].pins[0].is_orphaned = false;
+  assert.equal(compareNativeClipboard(JSON.stringify(dump)).equal, false);
+});

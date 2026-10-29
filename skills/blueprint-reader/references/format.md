@@ -4,7 +4,23 @@ The CLI uses UEBlueprint 3.0.0's ObjectEntity grammar without the browser render
 
 The JSON schema version is 1. A bundle contains `sources`, `graphs` and document `warnings`. Sources record name/URL, decoded text byte count and SHA-256. Each graph has an ID, name, owner/path when available, nodes, entries, edges and warnings. Each edge has `from`/`to` node+pin endpoints, kind `exec` or `data`, and a reciprocal flag. Each node includes its original identity, class, semantic references, raw property strings, real pins, separate user-defined-pin declarations and source line range. Exact numeric pin defaults remain strings to avoid int64 precision loss. Raw node text is included only with `--include-raw` or raw output; newlines are normalized to LF.
 
-Node identity is `(graph ID, node name)`; pin identity adds PinId. Different nodes can legitimately share a PinId. Multiple inputs receive distinct source IDs. The reader never guesses that unrelated same-named assets are identical. Export paths establish graph scope; plain clipboard fragments need headings or separate files when names collide. BPGraph wrappers expose their NodesString. Whole nested asset/T3D level exports and every custom node grammar are not guaranteed; this is a clipboard graph reader.
+Node identity is `(graph ID, node ID)`; pin identity adds PinId. Clipboard node IDs are UObject names; native node IDs are the exporter's GUIDs. Different nodes can legitimately share a PinId. Multiple inputs receive distinct source IDs. The reader never guesses that unrelated same-named assets are identical. Export paths establish graph scope; plain clipboard fragments need headings or separate files when names collide. BPGraph wrappers expose their NodesString. Whole nested asset/T3D level exports and every custom node grammar are not guaranteed.
+
+## Native graph input (0.4)
+
+`dump_blueprint_graph` payloads and complete MCP envelopes use a separate adapter,
+reported as `ecabridge-json@1` in `parser` (mixed inputs list both parsers). The
+normalized bundle remains schema 1. Native node `source.format` is
+`ecabridge-json`; line ranges and clipboard-only properties are unavailable.
+`raw` is original node JSON. Full source JSON, including exporter metadata,
+remains in the saved session. It is not a lossless clipboard reconstruction.
+
+Legacy native dumps substitute local direction/name pin identities and disclose
+missing hidden pins and semantic evidence. The `reader_schema_version:1` input
+contract requires real node/pin GUIDs; unknown versions, ambiguous identifiers,
+and continuation stubs fail. `source_warnings` in analysis preserves exporter
+confidence/notes and explains source limits; brief output is still byte bounded.
+See [paired comparisons and live-editor limits](editor-integration.md).
 
 Macro references resolve to supplied graph bodies by full path (including the Blueprint owner for relative paths). A unique heading-only macro body can resolve by name, explicitly labeled `unique_name`. This is not equivalent to proving ownership. Unprovided Blueprint defaults, assets, custom function bodies, network authority and runtime values remain unknown. Multiple graphs may be attached without their dependent libraries.
 

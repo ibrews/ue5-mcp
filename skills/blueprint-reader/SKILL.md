@@ -1,7 +1,7 @@
 ---
 name: blueprint-reader
 license: MIT
-description: Read, explain, trace, debug, and plan edits to Unreal Engine Blueprint graphs from blueprintue.com links or raw Begin Object / End Object clipboard text, including attached text documents and macro bodies. Generate a compact AI brief, plain-language overview, evidence-based improvement tips, or a local paste/link page. Use when asked what a Blueprint does, which nodes or pins to change, how events/data flow, or to inspect a BlueprintUE link. Works offline for files; no running Unreal editor required.
+description: Read, explain, trace, debug, and plan edits to Unreal Engine Blueprint graphs from blueprintue.com links, raw Begin Object / End Object clipboard text, or native dump_blueprint_graph JSON, including attached text documents and macro bodies. Generate a compact AI brief, plain-language overview, evidence-based improvement tips, or a local paste/link page. Use when asked what a Blueprint does, which nodes or pins to change, how events/data flow, or to inspect a BlueprintUE link or native graph dump. Works offline for files; no running Unreal editor required.
 ---
 
 # Blueprint reader
