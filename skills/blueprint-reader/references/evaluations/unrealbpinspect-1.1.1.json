@@ -1,0 +1,498 @@
+{
+  "date": "2026-10-29",
+  "platform": "macOS ARM64",
+  "tool": "bp-inspect 1.1.1",
+  "upstream_commit": "f239a655f9194e47e2ee5e19c1c373731d0cefea",
+  "binary_sha256": "ba44956a3ce85bd4e3052b21a536c44ac9a0cde392f1de946d5ba5375ea199d2",
+  "reader_commit": "116234bb0d5a8f59f9738cfe1e5ff76c03272e31",
+  "integration_accepted": false,
+  "same_asset_parity": "not_established",
+  "cases": [
+    {
+      "id": "vr56-BP_WobbleTarget",
+      "kind": "local_real_asset",
+      "bytes": 46553,
+      "sha256": "240597303b2a40daf25ea58ad412da988b3b66a3db78e077eb58aca66aee26f8",
+      "package_metadata": {
+        "legacy_version": -9,
+        "ue5_file_version": 1017,
+        "header_size": 35055,
+        "custom_version_count": 13,
+        "custom_version_count_offset": 48,
+        "word_at_offset_24": -1429983268,
+        "engine_version_record_candidates": [
+          {
+            "version": "5.6.0",
+            "changelist": 43061862,
+            "branch": "++UE5+Release-5.6",
+            "offset": 524
+          },
+          {
+            "version": "5.6.0",
+            "changelist": 43061862,
+            "branch": "++UE5+Release-5.6",
+            "offset": 556
+          }
+        ]
+      },
+      "exit": 2,
+      "binary_parse_ok": false,
+      "input_unchanged": true,
+      "comparison": "blocked_by_binary_parse_failure",
+      "error": "invalid custom version count -1429983268"
+    },
+    {
+      "id": "vr56-VRPawn",
+      "kind": "local_real_asset",
+      "bytes": 925398,
+      "sha256": "911241812dda14eff8399b10e05effb1631b15fcff2c597daa352d6a984e0d6a",
+      "package_metadata": {
+        "legacy_version": -8,
+        "ue5_file_version": 1013,
+        "header_size": 439843,
+        "custom_version_count": 15,
+        "custom_version_count_offset": 24,
+        "word_at_offset_24": 15,
+        "engine_version_record_candidates": [
+          {
+            "version": "5.6.0",
+            "changelist": 38693243,
+            "branch": "++UE5+Main",
+            "offset": 516
+          },
+          {
+            "version": "5.6.0",
+            "changelist": 38693164,
+            "branch": "++UE5+Main",
+            "offset": 541
+          }
+        ]
+      },
+      "exit": 0,
+      "binary_parse_ok": true,
+      "input_unchanged": true,
+      "comparison": "missing_clipboard",
+      "functions": 45,
+      "exports": 426,
+      "diagnostics": []
+    },
+    {
+      "id": "vr56-Menu",
+      "kind": "local_real_asset",
+      "bytes": 522246,
+      "sha256": "c56a4966f1b70385284926af37cbd65de99a7e849329b6bfe71930e60d059210",
+      "package_metadata": {
+        "legacy_version": -8,
+        "ue5_file_version": 1013,
+        "header_size": 262776,
+        "custom_version_count": 14,
+        "custom_version_count_offset": 24,
+        "word_at_offset_24": 14,
+        "engine_version_record_candidates": [
+          {
+            "version": "5.6.0",
+            "changelist": 38693243,
+            "branch": "++UE5+Main",
+            "offset": 494
+          },
+          {
+            "version": "5.6.0",
+            "changelist": 38693164,
+            "branch": "++UE5+Main",
+            "offset": 519
+          }
+        ]
+      },
+      "exit": 0,
+      "binary_parse_ok": true,
+      "input_unchanged": true,
+      "comparison": "missing_clipboard",
+      "functions": 15,
+      "exports": 239,
+      "diagnostics": []
+    },
+    {
+      "id": "ecab57-BP_DiscoFloor",
+      "kind": "local_real_asset",
+      "bytes": 74897,
+      "sha256": "e9b4e2e5b54ebfa5b0cc535f879cf68bcd454b6078e73674f6be438220b99380",
+      "package_metadata": {
+        "legacy_version": -9,
+        "ue5_file_version": 1018,
+        "header_size": 47909,
+        "custom_version_count": 10,
+        "custom_version_count_offset": 48,
+        "word_at_offset_24": 906511452,
+        "engine_version_record_candidates": [
+          {
+            "version": "5.7.4",
+            "changelist": 51494982,
+            "branch": "++UE5+Release-5.7",
+            "offset": 444
+          },
+          {
+            "version": "5.7.0",
+            "changelist": 47537391,
+            "branch": "++UE5+Release-5.7",
+            "offset": 476
+          }
+        ]
+      },
+      "exit": 2,
+      "binary_parse_ok": false,
+      "input_unchanged": true,
+      "comparison": "blocked_by_binary_parse_failure",
+      "error": "invalid custom version count 906511452"
+    },
+    {
+      "id": "ecab57-BP_Rocket",
+      "kind": "local_real_asset",
+      "bytes": 275790,
+      "sha256": "2b906e5187f17af6a11aa0cab84ba68f5c8b2bd2fa150f3034f04e0e37e882ec",
+      "package_metadata": {
+        "legacy_version": -9,
+        "ue5_file_version": 1018,
+        "header_size": 156622,
+        "custom_version_count": 12,
+        "custom_version_count_offset": 48,
+        "word_at_offset_24": -1848042175,
+        "engine_version_record_candidates": [
+          {
+            "version": "5.7.4",
+            "changelist": 51494982,
+            "branch": "++UE5+Release-5.7",
+            "offset": 487
+          },
+          {
+            "version": "5.7.0",
+            "changelist": 47537391,
+            "branch": "++UE5+Release-5.7",
+            "offset": 519
+          }
+        ]
+      },
+      "exit": 2,
+      "binary_parse_ok": false,
+      "input_unchanged": true,
+      "comparison": "blocked_by_binary_parse_failure",
+      "error": "invalid custom version count -1848042175"
+    },
+    {
+      "id": "ecab57-BP_MiniMe",
+      "kind": "local_real_asset",
+      "bytes": 83537,
+      "sha256": "48c8486412ee2af7ec7e7fa67c4c1f0f0aad4b47d0070cf08ec48478ba02feb3",
+      "package_metadata": {
+        "legacy_version": -9,
+        "ue5_file_version": 1018,
+        "header_size": 53872,
+        "custom_version_count": 13,
+        "custom_version_count_offset": 48,
+        "word_at_offset_24": 2057883465,
+        "engine_version_record_candidates": [
+          {
+            "version": "5.7.4",
+            "changelist": 51494982,
+            "branch": "++UE5+Release-5.7",
+            "offset": 512
+          },
+          {
+            "version": "5.7.0",
+            "changelist": 47537391,
+            "branch": "++UE5+Release-5.7",
+            "offset": 544
+          }
+        ]
+      },
+      "exit": 2,
+      "binary_parse_ok": false,
+      "input_unchanged": true,
+      "comparison": "blocked_by_binary_parse_failure",
+      "error": "invalid custom version count 2057883465"
+    },
+    {
+      "id": "vr57-BP_ThirdPersonCharacter",
+      "kind": "local_real_asset",
+      "bytes": 165189,
+      "sha256": "79e272e59dff2bea2e4a1eec01d2f23d18a975484b072d086c6c41dbb61f5f8a",
+      "package_metadata": {
+        "legacy_version": -9,
+        "ue5_file_version": 1018,
+        "header_size": 85371,
+        "custom_version_count": 13,
+        "custom_version_count_offset": 48,
+        "word_at_offset_24": -426830004,
+        "engine_version_record_candidates": [
+          {
+            "version": "5.7.3",
+            "changelist": 50162420,
+            "branch": "++UE5+Release-5.7",
+            "offset": 526
+          },
+          {
+            "version": "5.7.0",
+            "changelist": 47537391,
+            "branch": "++UE5+Release-5.7",
+            "offset": 558
+          }
+        ]
+      },
+      "exit": 2,
+      "binary_parse_ok": false,
+      "input_unchanged": true,
+      "comparison": "blocked_by_binary_parse_failure",
+      "error": "invalid custom version count -426830004"
+    },
+    {
+      "id": "vr58-BP_SwapHands",
+      "kind": "local_real_asset",
+      "bytes": 64239,
+      "sha256": "374809bb296752ba7d94f8325d0169e9f28f071275ffaf3bc2f6a071cac500b6",
+      "package_metadata": {
+        "legacy_version": -9,
+        "ue5_file_version": 1018,
+        "header_size": 41531,
+        "custom_version_count": 12,
+        "custom_version_count_offset": 48,
+        "word_at_offset_24": -1827811599,
+        "engine_version_record_candidates": [
+          {
+            "version": "5.8.2",
+            "changelist": 56702186,
+            "branch": "++UE5+Release-5.8",
+            "offset": 485
+          },
+          {
+            "version": "5.8.0",
+            "changelist": 55116800,
+            "branch": "++UE5+Release-5.8",
+            "offset": 517
+          }
+        ]
+      },
+      "exit": 2,
+      "binary_parse_ok": false,
+      "input_unchanged": true,
+      "comparison": "blocked_by_binary_parse_failure",
+      "error": "invalid custom version count -1827811599"
+    },
+    {
+      "id": "vr58-BP_XRPawn",
+      "kind": "local_real_asset",
+      "bytes": 1128118,
+      "sha256": "f27b05d526b161bc2e3e49092d2b663580eb272e0f4cdeb30af6a2b7af1df466",
+      "package_metadata": {
+        "legacy_version": -9,
+        "ue5_file_version": 1018,
+        "header_size": 536601,
+        "custom_version_count": 16,
+        "custom_version_count_offset": 48,
+        "word_at_offset_24": 650210874,
+        "engine_version_record_candidates": [
+          {
+            "version": "5.8.2",
+            "changelist": 56702186,
+            "branch": "++UE5+Release-5.8",
+            "offset": 572
+          },
+          {
+            "version": "5.8.0",
+            "changelist": 55116800,
+            "branch": "++UE5+Release-5.8",
+            "offset": 604
+          }
+        ]
+      },
+      "exit": 2,
+      "binary_parse_ok": false,
+      "input_unchanged": true,
+      "comparison": "blocked_by_binary_parse_failure",
+      "error": "invalid custom version count 650210874"
+    },
+    {
+      "id": "vr58-BP_Projectile",
+      "kind": "local_real_asset",
+      "bytes": 96489,
+      "sha256": "e32447f1873280bb0309c527d2440645116ed727f65998e6b6fb1290166fd8de",
+      "package_metadata": {
+        "legacy_version": -9,
+        "ue5_file_version": 1018,
+        "header_size": 60105,
+        "custom_version_count": 14,
+        "custom_version_count_offset": 48,
+        "word_at_offset_24": -1059644605,
+        "engine_version_record_candidates": [
+          {
+            "version": "5.8.2",
+            "changelist": 56702186,
+            "branch": "++UE5+Release-5.8",
+            "offset": 536
+          },
+          {
+            "version": "5.8.0",
+            "changelist": 55116800,
+            "branch": "++UE5+Release-5.8",
+            "offset": 568
+          }
+        ]
+      },
+      "exit": 2,
+      "binary_parse_ok": false,
+      "input_unchanged": true,
+      "comparison": "blocked_by_binary_parse_failure",
+      "error": "invalid custom version count -1059644605"
+    },
+    {
+      "id": "MCP58_test1-BP_VehicleAdvPawnBase",
+      "kind": "local_real_asset",
+      "bytes": 334515,
+      "sha256": "e306a2150c3ef83f91012fc40fb20580299b8916617ae4d07594ca65e4eeb021",
+      "package_metadata": {
+        "legacy_version": -9,
+        "ue5_file_version": 1018,
+        "header_size": 167344,
+        "custom_version_count": 12,
+        "custom_version_count_offset": 48,
+        "word_at_offset_24": -875104530,
+        "engine_version_record_candidates": [
+          {
+            "version": "5.8.0",
+            "changelist": 52005359,
+            "branch": "++UE5+Main",
+            "offset": 508
+          },
+          {
+            "version": "5.8.0",
+            "changelist": 52004984,
+            "branch": "++UE5+Main",
+            "offset": 533
+          }
+        ]
+      },
+      "exit": 2,
+      "binary_parse_ok": false,
+      "input_unchanged": true,
+      "comparison": "blocked_by_binary_parse_failure",
+      "error": "invalid custom version count -875104530"
+    },
+    {
+      "id": "MCP58_test1-BP_TimeTrialGameMode",
+      "kind": "local_real_asset",
+      "bytes": 103069,
+      "sha256": "49af341b98d5b50126bdd3186d08babe9096bec50efe469b97d0b572a09a6ee4",
+      "package_metadata": {
+        "legacy_version": -9,
+        "ue5_file_version": 1018,
+        "header_size": 61015,
+        "custom_version_count": 10,
+        "custom_version_count_offset": 48,
+        "word_at_offset_24": -1151063629,
+        "engine_version_record_candidates": [
+          {
+            "version": "5.8.0",
+            "changelist": 53470997,
+            "branch": "++UE5+Dev-Release-5.8",
+            "offset": 469
+          },
+          {
+            "version": "5.8.0",
+            "changelist": 53470997,
+            "branch": "++UE5+Dev-Release-5.8",
+            "offset": 505
+          }
+        ]
+      },
+      "exit": 2,
+      "binary_parse_ok": false,
+      "input_unchanged": true,
+      "comparison": "blocked_by_binary_parse_failure",
+      "error": "invalid custom version count -1151063629"
+    },
+    {
+      "id": "upstream-ue_4-27-BP_DecoderTest",
+      "kind": "upstream_control",
+      "bytes": 606055,
+      "sha256": "b7e83d1a14603736d7bff44ff5a3b7be2a83cde4b9eb935501ea10e8b68d2a7b",
+      "package_metadata": {
+        "legacy_version": -7,
+        "layout": "not_inspected"
+      },
+      "exit": 0,
+      "binary_parse_ok": true,
+      "input_unchanged": true,
+      "comparison": "missing_clipboard",
+      "functions": 44,
+      "exports": 319,
+      "diagnostics": []
+    },
+    {
+      "id": "upstream-ue_4-27-Helm_BP",
+      "kind": "upstream_control",
+      "bytes": 169179,
+      "sha256": "78f8f6c81e24d5ec8d252237ba443baabafe4cac0b8637bf484d3ae2d94caad1",
+      "package_metadata": {
+        "legacy_version": -7,
+        "layout": "not_inspected"
+      },
+      "exit": 0,
+      "binary_parse_ok": true,
+      "input_unchanged": true,
+      "comparison": "missing_clipboard",
+      "functions": 2,
+      "exports": 47,
+      "diagnostics": []
+    },
+    {
+      "id": "upstream-ue_5-3-Helm_BP",
+      "kind": "upstream_control",
+      "bytes": 383579,
+      "sha256": "660b611a1af826a057c41197671bccc3c183f0cfd79653bb50441991372a2349",
+      "package_metadata": {
+        "legacy_version": -8,
+        "ue5_file_version": 1009,
+        "header_size": 191885,
+        "custom_version_count": 13,
+        "custom_version_count_offset": 24,
+        "word_at_offset_24": 13,
+        "engine_version_record_candidates": []
+      },
+      "exit": 0,
+      "binary_parse_ok": true,
+      "input_unchanged": true,
+      "comparison": "missing_clipboard",
+      "functions": 10,
+      "exports": 188,
+      "diagnostics": []
+    },
+    {
+      "id": "upstream-ue_5-5-Helm_BP",
+      "kind": "upstream_control",
+      "bytes": 173685,
+      "sha256": "c9b731fcafbfcca567b4a8483dc4236768dd9297dde67cf7a57745a0d8b3c69a",
+      "package_metadata": {
+        "legacy_version": -8,
+        "ue5_file_version": 1013,
+        "header_size": 144018,
+        "custom_version_count": 14,
+        "custom_version_count_offset": 24,
+        "word_at_offset_24": 14,
+        "engine_version_record_candidates": []
+      },
+      "exit": 0,
+      "binary_parse_ok": true,
+      "input_unchanged": true,
+      "comparison": "missing_clipboard",
+      "functions": 2,
+      "exports": 47,
+      "diagnostics": []
+    }
+  ],
+  "unpaired_clipboard_control": {
+    "graphs": 3,
+    "nodes": 699,
+    "pins": 2798,
+    "edges": 852,
+    "warnings": 18,
+    "json_sha256": "5d72a5f287e7235f0d129afa596452574b30872a4d4c44fb1151c1c5f69288e9"
+  }
+}

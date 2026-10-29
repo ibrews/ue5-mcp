@@ -191,6 +191,8 @@ npm run test:live
 
 The suite includes 102 real UEBlueprint node exports. The opt-in live suite fetches the public dialogue example, which can change or disappear. `BLUEPRINT_ACCEPTANCE_FILE` enables an additional private camera-sample test used during development; contributors do not need that private file to run the normal suite. See [format and provenance](references/format.md) for schema details and recorded platform validation.
 
+**Binary asset evaluation:** [UnrealBPInspect v1.1.1 testing](references/unrealbpinspect-evaluation.md) found package-header failures in ten of twelve real UE 5.6–5.8 assets. Two early 5.6 assets using an older layout decoded, but same-asset clipboard parity is still unverified. Binary import remains unsupported. The linked report includes a repeatable local evaluation harness and the gates for a future adapter.
+
 Issues and PRs are welcome. Include the OS, Node version, command, observed error and a small export you have permission to share. Keep client assets, secrets and private project exports out of public issues and commits. Preserve exact node/pin identity and add a regression case for parser fixes.
 
 ## License and support
