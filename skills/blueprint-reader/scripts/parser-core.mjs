@@ -1,4 +1,5 @@
 import { byteLength } from './text.mjs';
+import { nativeGraphs } from './native-graph.mjs';
 import ObjectEntity from 'ueblueprint/js/entity/ObjectEntity.js';
 import initializeSerializerFactory from 'ueblueprint/js/serialization/initializeSerializerFactory.js';
 
@@ -231,6 +232,18 @@ export function resolveMacros(bundle) {
 
 export function parseTextWithDigest(text, source, digest) {
   if (!/^[a-f0-9]{64}$/.test(digest)) throw new Error('A SHA-256 source digest is required.');
+  checkInput(text);
+  if (text.trimStart().startsWith('{')) {
+    const { graphs, warnings } = nativeGraphs(text), id = source.id || 's1';
+    for (const [i, g] of graphs.entries()) {
+      connectGraph(Object.assign(g, { id: `${id}:g${i + 1}`, source_id: id }));
+      if (g.native_connection_count !== null && g.native_connection_count !== g.edges.length) {
+        g.warnings.push({ code: 'native_connection_count_mismatch', expected: g.native_connection_count, resolved: g.edges.length });
+      }
+    }
+    return { schema_version: 1, parser: 'ecabridge-json@1', graphs, warnings,
+      sources: [{ ...source, id, format: 'ecabridge-json', sha256: digest, bytes: byteLength(text) }] };
+  }
   const { blocks, warnings } = extractBlocks(text);
   const groups = new Map();
   for (const block of blocks) {
@@ -248,6 +261,6 @@ export function parseTextWithDigest(text, source, digest) {
 }
 
 export function mergeBundles(bundles) {
-  return resolveMacros({ schema_version: 1, parser: 'ueblueprint@3.0.0', sources: bundles.flatMap(b => b.sources),
+  return resolveMacros({ schema_version: 1, parser: [...new Set(bundles.map(b => b.parser))].join('+'), sources: bundles.flatMap(b => b.sources),
     graphs: bundles.flatMap(b => b.graphs), warnings: bundles.flatMap(b => b.warnings) });
 }

@@ -96,7 +96,7 @@ export async function main(args = process.argv.slice(2)) {
   }
   if (options.output) await writeFile(options.output, output, { flag: 'wx' });
   else process.stdout.write(output);
-  const incomplete = graphs.some(g => g.warnings.some(w => ['missing_link_target', 'nonreciprocal_link', 'same_direction_link', 'exec_data_mismatch', 'orphaned_pin'].includes(w.code)));
+  const incomplete = graphs.some(g => g.warnings.some(w => ['missing_link_target', 'nonreciprocal_link', 'same_direction_link', 'exec_data_mismatch', 'orphaned_pin', 'unresolved_native_link', 'native_connection_count_mismatch', 'unexpanded_native_subgraphs'].includes(w.code)));
   if (options.strict && incomplete) process.exitCode = 2;
 }
 

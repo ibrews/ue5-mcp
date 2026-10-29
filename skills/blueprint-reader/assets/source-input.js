@@ -1,5 +1,6 @@
 // Fast input-shape checks for button readiness, not a second Blueprint parser.
 // UEBlueprint still validates the full grammar when the user reads the graph.
+import { nativeDump } from './native-input.js';
 export const INPUT_LIMIT = 32 * 1024 * 1024;
 const bytes = text => new TextEncoder().encode(text).byteLength;
 
@@ -16,6 +17,9 @@ export function blueprintURL(input) {
 export function looksLikeBlueprint(text, depth = 0) {
   if (typeof text !== 'string' || !text.trim() || text.length > INPUT_LIMIT || depth > 8 ||
       text.includes('\0') || text.trimStart().startsWith('{\\rtf')) return false;
+  if (text.trimStart().startsWith('{')) {
+    try { nativeDump(text); return true; } catch { return false; }
+  }
   // Function exports can wrap escaped clipboard text inside BPGraph NodesString.
   let wrapped = false;
   if (/^\s*BPGraph\s*\(/m.test(text)) {
@@ -60,7 +64,7 @@ export function inputProblem({ text = '', url = '', files = [] }) {
   }
   if (!url && !sources.length) return 'Add Blueprint text, files or a BlueprintUE link to continue.';
   if (sources.some(source => !looksLikeBlueprint(source))) {
-    return 'Use complete Blueprint clipboard text (Begin Object … End Object) or a saved session.';
+    return 'Use complete Blueprint clipboard text, native graph JSON or a saved session.';
   }
   if (sources.length > 100 || sources.reduce((n, text) => n + bytes(text), 0) > INPUT_LIMIT) {
     return 'Use at most 100 sources totaling 32 MiB.';

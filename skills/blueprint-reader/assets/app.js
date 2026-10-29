@@ -1,4 +1,5 @@
 import { inputProblem, INPUT_LIMIT } from './source-input.js';
+import { fileInput } from './native-input.js';
 
 export function startApp(api) {
 const $ = id => document.getElementById(id);
@@ -15,7 +16,7 @@ async function readFile(file) {
     const raw = new Uint8Array(await file.arrayBuffer());
     const encoding = raw[0] === 255 && raw[1] === 254 ? 'utf-16le' : raw[0] === 254 && raw[1] === 255 ? 'utf-16be' : 'utf-8';
     const text = new TextDecoder(encoding, { fatal: true }).decode(raw);
-    return file.name.toLowerCase().endsWith('.json') ? { session: JSON.parse(text) } : { name: file.name, text };
+    return fileInput(file.name, text);
   })());
   return fileReads.get(file);
 }

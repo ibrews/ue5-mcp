@@ -42,6 +42,15 @@ For pasted text, write a local text file using the file tool, or pipe the litera
 
 `--format summary` retains the detailed inventory. `--format flow` abbreviates pure expressions to six levels, 100 expansions per statement, 16 arguments and 240 characters per displayed value, with explicit notices. It retains exact branch/output labels. It is static adjacency, not a scheduler or executable pseudocode. Sequence, loop, latent callback and replicated execution semantics require reasoning about node classes. `--format mermaid` emits a diagram; use an entry slice for a manageable view. `--limit` caps sections with explicit omission counts. JSON is complete for the selected scope; `--include-raw` retains node text as well.
 
+## Native graph JSON
+
+Native `dump_blueprint_graph` JSON also works as an input file or pasted text.
+Read source warnings before explaining it: legacy exports omit hidden pins and
+semantic metadata. Full MCP responses are accepted; continuation chunks must be
+reassembled first. `--format raw` for a native node is original JSON, **not**
+pasteable Unreal clipboard code. See [native editor integration](references/editor-integration.md)
+for paired clipboard checks and GUID-based diff limits.
+
 ## Plan modifications
 
 Describe the intended behavior, exact nodes/pins/defaults to change, effects on callers/macros and a concrete editor test. Use read-only inspection to prepare the plan. This parser deliberately has no graph writer: normalized JSON is not pasteable Unreal code. Original raw blocks preserve exported syntax but cannot prove asset references or engine-version compatibility.

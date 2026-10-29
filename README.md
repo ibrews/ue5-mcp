@@ -4,6 +4,10 @@
 
 **[Try Blueprint Reader in your browser →](https://ibrews.github.io/ue5-mcp/)** No installation or account. Paste raw text, add files, reopen a saved session, or import a BlueprintUE link automatically. Parsing stays in your browser; link imports use our small fetch helper. Pasted text and files are never uploaded.
 
+Native editor graphs are supported too: save a complete `dump_blueprint_graph`
+result as JSON and feed it into the same brief and inspection workflow. See
+[native graph imports and paired comparisons](skills/blueprint-reader/references/editor-integration.md).
+
 [![Watch the 42-second Blueprint Reader trailer: real Blueprint nodes, the Claude story, a link import, and a compact brief.](docs/assets/blueprint-reader-trailer-poster.jpg)](https://ibrews.github.io/ue5-mcp/trailer/)
 
 **[Watch the 42-second trailer](https://ibrews.github.io/ue5-mcp/trailer/)** · A visual story of overload → compact brief → focused understanding. Clarifying captions and original music; works muted. [Transcript and production notes](docs/trailer/README.md).

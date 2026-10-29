@@ -22,6 +22,22 @@ Open the [live browser edition](https://ibrews.github.io/ue5-mcp/) and click **T
 
 Parsing, analysis and source hashing run in a browser worker. Pasted text and files are never uploaded. For a link import, our Vercel helper receives the URL and retrieves its export from BlueprintUE; it extracts text but does not analyze graphs, call AI, save exports or cache responses. GitHub Pages and Vercel's ordinary access logging still applies, so use paste/files for sensitive source. There are no analytics or external fonts. Automatic imports allow up to 4 MiB of JSON response; paste/files allow 32 MiB of decoded text. Save the full session before closing or reloading: data is kept in tab memory, not automatically stored.
 
+## Native editor graph JSON
+
+Paste or upload a complete `dump_blueprint_graph` result to get the same compact
+brief, findings and focused node inspection. Raw payloads and complete MCP
+envelopes work. Truncated responses are rejected; retrieve every continuation
+chunk first. Older dumps import with an explicit warning about missing hidden
+pins and semantic metadata.
+
+With a supporting editor bridge, `include_clipboard:true` captures both native
+JSON and original Unreal clipboard text for each graph. Run
+`node scripts/native-parity.mjs paired-dump.json` to compare their node/pin IDs,
+wires and selected defaults. This is a comparison of the **same loaded graph**,
+not proof of saved `.uasset` parity or runtime correctness. Native node `--format
+raw` output is JSON and cannot be pasted back into Unreal. See
+[the editor workflow](references/editor-integration.md).
+
 ## 1. Install once
 
 You need **Git** and **Node.js 20 or newer** (`node --version`). The commands below install the same reader for Codex and Claude Code. Run them in your terminal, not inside a chat message.

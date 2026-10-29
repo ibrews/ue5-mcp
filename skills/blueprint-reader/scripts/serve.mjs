@@ -13,6 +13,7 @@ import { selectGraphs, sliceEntry, nodeReport, selectNode } from './report.mjs';
 
 const assets = new Map([['/', ['index.html', 'text/html']], ['/app.css', ['app.css', 'text/css']], ['/app.js', ['app.js', 'text/javascript']], ['/local-app.js', ['local-app.js', 'text/javascript']]]);
 assets.set('/source-input.js', ['source-input.js', 'text/javascript']);
+assets.set('/native-input.js', ['native-input.js', 'text/javascript']);
 for (const [file, type] of [['favicon.ico', 'image/x-icon'], ['favicon.svg', 'image/svg+xml'],
   ['favicon-32.png', 'image/png'], ['apple-touch-icon.png', 'image/png']]) {
   assets.set('/' + file, ['branding/' + file, type]);
